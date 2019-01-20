@@ -54,7 +54,7 @@ public class Scheduler {
 			try {
 				byte dataReceived[] = new byte[100];
 				receivePacketElevator = new DatagramPacket(dataReceived, dataReceived.length);
-				receiveSocket.receive(receivePacketElevator); // packet received from the server
+				sendSocket.receive(receivePacketElevator); // packet received from the server
 				System.out.println("Scheduler- Packet Received from Elevator");
 				printPacketDetails(receivePacketElevator);
 				
