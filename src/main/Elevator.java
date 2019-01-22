@@ -9,10 +9,10 @@ import java.util.Arrays;
 
 public class Elevator {
 	
-	private static DatagramSocket receiveSocket = null;
-	private static DatagramSocket responseSocket = null;
-	private static DatagramPacket receivePacket = null;
-	private static DatagramPacket responsePacket = null;
+	private static DatagramSocket receiveSocket; //non primitive fields start as null
+	private static DatagramSocket responseSocket;
+	private static DatagramPacket receivePacket;
+	private static DatagramPacket responsePacket;
 	String responsePacketS;
 	String receivePacketS;
 
