@@ -8,23 +8,56 @@ import java.util.*;
 public class Scheduler {
 	
 	private ArrayList<Elevator> elevators;
+	private DatagramSocket receiveSocket;
+	private DatagramPacket receivePacketFloor;
+	private static HashMap<Elevator, Integer> eleMap;
+	private Elevator ele;
 	public Scheduler()
 	{
+		eleMap = new HashMap<Elevator, Integer>();
 		elevators = new ArrayList<>();
 	}
+
 	
 	public void addElevator(Elevator car)
 	{
 		this.elevators.add(car);
 	}
+	// This code Just be where initalize the number of elevators 
+	public boolean availablePort(int port) {
+		try {
+			DatagramSocket ds = new DatagramSocket(port);
+			return true;
+		}
+		catch(IOException unavailable) {
+			return false;
+		}
+	}
+	
+	public Elevator iterateElevators() throws SocketException {
+		
+		for (Elevator ele : eleMap.keySet()) {
+				if (availablePort(eleMap.get(ele))) {
+					return ele;
+				}
+				else {
+					System.out.print("Port Unavilable");
+				}
+		}
+		return null; // No elevators unavailable!
+		
+	}
 	
 	
 	public void schedule()
 	{
+		
+		receiveSocket.receive(receivePacketFloor); 	
 		byte[] msg = new byte[]{ 0, 4, 5, 6,7};
 		
 		try {
-			DatagramPacket packet = new DatagramPacket(msg,msg.length,InetAddress.getLocalHost(),this.elevators.get(0).getPortNumber());
+			ele = iterateElevators();
+			DatagramPacket packet = new DatagramPacket(msg,msg.length,InetAddress.getLocalHost(),eleMap.get(ele));
 			DatagramSocket sendSocket = new DatagramSocket();
 			sendSocket.send(packet);
 			sendSocket.close();
@@ -107,7 +140,10 @@ public class Scheduler {
 		
 	}*/
 	public static void main(String[] args) {
+		
 		Elevator carA = new Elevator(23);
+		eleMap.put(carA, 6000);
+		
 		carA.start();
 	    Scheduler s = new Scheduler();
 	    s.addElevator(carA);

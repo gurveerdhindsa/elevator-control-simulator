@@ -14,7 +14,8 @@ public class Elevator {
 	private static DatagramSocket arrivalMessageSocket;
 	private static DatagramPacket receivePacket;
 	private static DatagramPacket arrivalMessagePacket;
-	String receivePacketS;
+	private String receivePacketS = "";
+	private final int floorInterval = 13;
 
 	//Number of elevator buttons will depend on number of floors
 	boolean button1 = false;
@@ -31,7 +32,7 @@ public class Elevator {
 	//Elevator motor?
 	//stationary=false; moving = true;
 	boolean motor = false;    //using this variable, the scheduler will determine if the elevator car is currently stationary or moving
-	
+	boolean isMotorOn = false;
 	//Elevator door?
 	//closed = false; open = true;
 	boolean doors = false;
@@ -53,6 +54,8 @@ public class Elevator {
 		}
 	}
 	
+	
+	
 	//This method is used to process the data received from scheduler 
 	public void sendandreceive() {
 		
@@ -60,13 +63,23 @@ public class Elevator {
 			
 			//Waiting to receive a request
 			//Construct a DatagramPacket to receive packets upto 100bytes long from Intermediate Host
+    	   	System.out.println("Waiting to receive packet from scheduler.");
 			byte floorData[] = new byte[100];
 			receivePacket = new DatagramPacket(floorData, floorData.length);
-			System.out.println("Waiting to receive packet from scheduler.");
-			
+		
 			//Receiving and printing data received
 			try{
 				receiveSocket.receive(receivePacket);
+				
+				//  Checks for move command (motor = true/false)
+				//Assuming first index of packet is motor ON/OFF 
+				isMotorOn = (floorData[0]!=0); // converts byte into bool
+				if (isMotorOn == true) {
+					motor = true;
+				}
+				else {
+					motor = false;
+				}
 				receivePacketS = new String(floorData,0,receivePacket.getLength());    //convert the received packet to a String
 				System.out.println("Data received from scheduler (in bytes): " + receivePacket);
 				System.out.println("Data received  from scheduler (in String): " + receivePacketS);	
@@ -84,8 +97,9 @@ public class Elevator {
 			String destFloorS = parsedPacket[1];
 			
 			currentFloor = Integer.valueOf(currentFloorS);
+			System.out.println("Currently at Floor: "+ currentFloor);
 			destFloor = Integer.valueOf(destFloorS);
-			
+			System.out.println("Going to Floor " + destFloor);
 			String arrivalMessageS = "The elevator car has arrived at floor number " + currentFloorS;
 			byte arrivalMessageB[] = arrivalMessageS.getBytes();
 			arrivalMessagePacket = new DatagramPacket(arrivalMessageB , arrivalMessageB.length, receivePacket.getAddress(), receivePacket.getPort());
@@ -100,7 +114,7 @@ public class Elevator {
 				
 				
 				try {
-					TimeUnit.SECONDS.sleep(13);    //13 seconds to move from floor 1 to floor 2
+					TimeUnit.SECONDS.sleep(floorInterval);    //13 seconds to move from floor 1 to floor 2
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -138,11 +152,7 @@ public class Elevator {
 			
 			//time taken to move from current floor to destination floor
 			//Example: 2nd floor to 5th floor:  (13*(5-2)=39seconds)
-			try {
-				TimeUnit.SECONDS.sleep(13*Math.abs(destFloor-currentFloor));    
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			elevatorMoving(destFloor, currentFloor, floorInterval);
 			
 			//After arriving at destination floor
 			lamp3 = false;      //turn off destination floor lamp
@@ -153,6 +163,16 @@ public class Elevator {
 				
 			
 			
+		}
+		
+	}
+	
+	public void elevatorMoving(int destFloor, int currFloor, int interval) {
+		
+		try {
+			TimeUnit.SECONDS.sleep(interval*Math.abs(destFloor-currFloor));   
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 		
 	}
