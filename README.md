@@ -1,10 +1,18 @@
-Elevator Control Simulator
-(Temporary README)
+# Elevator Control Simulator
+## (Temporary README)
 
-mvn install - Installs all the necessary dependencies with the project (JUnit)
-
-~~ Do this before you commit ~~
-mvn compile - Compiles source code
-mvn clean test - Runs all unit tests located under src/test
+Installs all the necessary dependencies with the project (JUnit)
+```
+mvn install 
+```
+## Do this before you commit
+Compiles source code
+```
+mvn compile
+```
+Runs all unit tests located under src/test
+```
+mvn clean test
+```
 
 
