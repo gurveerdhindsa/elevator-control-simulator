@@ -7,30 +7,15 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.Arrays;
 
-public class Elevator {
+public class Elevator extends Thread{
 	
-	private static DatagramSocket receiveSocket; //non primitive fields start as null
-	private static DatagramSocket responseSocket;
-	private static DatagramPacket receivePacket;
-	private static DatagramPacket responsePacket;
-	String responsePacketS;
-	String receivePacketS;
+	private DatagramSocket receiveSocket; //non primitive fields start as null
+	private DatagramSocket SendSocket;
+	private int currentfloor;
+	private int destinationfloor;
+	private boolean stationary;
+	private int portNumber;
 
-	//Number of elevator buttons will depend on number of floors
-	boolean button1 = false;
-	boolean button2 = false;
-	boolean button3 = false;
-	boolean button4 = false;
-	
-	//Number of elevator lamps will depend on number of floors/buttons
-	boolean lamp1 = false;
-	boolean lamp2 = false;
-	boolean lamp3 = false;
-	boolean lamp4 = false;
-	
-	//Elevator motor?
-	
-	//Elevator door?
 	
 	
 	public Elevator() {
@@ -43,9 +28,62 @@ public class Elevator {
 			System.out.println("Cannot open socket on port 69.");
 		}
 	}
+	public Elevator(int portNumber)
+	{
+		this.stationary = true;
+		this.portNumber = portNumber;
+		try {
+			receiveSocket = new DatagramSocket(portNumber);
+		}catch (SocketException e)
+		{
+			e.printStackTrace();
+			System.out.println("Elevator not created");
+		}
+	}
 	
+	
+	//first thing it receive after being created is move from floor to floor
+	
+	private void getRequest()
+	{
+		byte data[] = new byte[100];
+	    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
+	    System.out.println("IntermediateHost: Waiting for Packet.\n");
+	    // Block until a datagram packet is received from receiveSocket.
+        try {
+        	System.out.printf("Elevator %s waiting for movement request\n",this.getName());
+        	receiveSocket.receive(receiveClientPacket);
+        }
+        catch(IOException e)
+        {
+        	System.out.print("IO Exception: likely:");
+            System.out.println("Receive Socket Timed Out.\n" + e);
+            e.printStackTrace();
+        }
+        
+        //request gotten
+        //fill in destination floor and assuming that we will just start moving for now  
+        System.out.println("got request");        
+        
+        try {
+        	Thread.sleep(10000);
+        }
+        catch(InterruptedException e)
+        {
+        	System.out.println("Stopping elevator");
+        }
+	}
+	
+	public int getPortNumber()
+	{
+		return this.portNumber;
+	}
+	public void run()
+	{
+		getRequest();
+	}
 	//This method is used to process the data received from scheduler 
-	public void sendandreceive() {
+	/*public void sendandreceive() {
 		
        for(;;){
 			
@@ -139,5 +177,5 @@ public class Elevator {
 		Elevator server = new Elevator();
 		server.sendandreceive();
 			
-	}
+	}*/
 }

@@ -6,30 +6,54 @@ import java.util.*;
 
 
 public class Scheduler {
-	private DatagramSocket receiveSocket;
-	private DatagramSocket sendSocket;
-	private DatagramPacket receivePacketFloor;
-	private DatagramPacket sendPacketElevator;
-	private DatagramPacket receivePacketElevator;
-	private DatagramPacket sendPacketFloor;
-	private final int receivePort = 23;
-	private final int sendPort = 69;
-	public Scheduler() {
-		try {
-			receiveSocket = new DatagramSocket(receivePort);
-			sendSocket = new DatagramSocket(); 
-		} catch (SocketException e) {
-			e.printStackTrace();
-		}
+	
+	private ArrayList<Elevator> elevators;
+	public Scheduler()
+	{
+		elevators = new ArrayList<>();
+	}
+	
+	public void addElevator(Elevator car)
+	{
+		this.elevators.add(car);
 	}
 	
 	
-	//Person makes a request for an elevator
-	//Closest elevator is brought to the floor
-	//The person enters the elevator
-	//Makes a request for the floor Number
-	//The elevator goes to the floor depending on the floor requests
-	public void sendReceive() {
+	public void schedule()
+	{
+		byte[] msg = new byte[]{ 0, 4, 5, 6,7};
+		
+		try {
+			DatagramPacket packet = new DatagramPacket(msg,msg.length,InetAddress.getLocalHost(),this.elevators.get(0).getPortNumber());
+			DatagramSocket sendSocket = new DatagramSocket();
+			sendSocket.send(packet);
+			sendSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		pause();
+		System.out.println("Pause done");
+		
+		Elevator f = this.elevators.get(0);
+		boolean g = f.isInterrupted();
+		Thread.State state = f.getState();
+		f.interrupt();
+	}
+	
+	//just checking
+	static void pause(){
+	    long Time0 = System.currentTimeMillis();
+	    long Time1;
+	    long runTime = 0;
+	    while(runTime<9000){
+	        Time1 = System.currentTimeMillis();
+	        runTime = Time1 - Time0;
+	    }
+	}
+	
+	/*public void sendReceive() {
 		for (;;) {
 			
 			//receive button request from floor (up/down)
@@ -81,10 +105,14 @@ public class Scheduler {
 		System.out.println("The destination port is: " + packet.getPort());
 		System.out.println();
 		
-	}
+	}*/
 	public static void main(String[] args) {
-		Scheduler proxy = new Scheduler();
-		proxy.sendReceive();
+		Elevator carA = new Elevator(23);
+		carA.start();
+	    Scheduler s = new Scheduler();
+	    s.addElevator(carA);
+	    s.schedule();
+	    
 	}
 		
 	
