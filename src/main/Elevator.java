@@ -8,15 +8,17 @@ import java.net.SocketException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
-public class Elevator {
+public class Elevator extends Thread {
 	
-	private static DatagramSocket receiveSocket; //non primitive fields start as null
+	
+	//private static DatagramSocket receiveSocket; //non primitive fields start as null
 	private static DatagramSocket arrivalMessageSocket;
 	private static DatagramPacket receivePacket;
 	private static DatagramPacket arrivalMessagePacket;
 	private String receivePacketS = "";
 	private final int floorInterval = 13;
 
+	
 	//Number of elevator buttons will depend on number of floors
 	boolean button1 = false;
 	boolean button2 = false;
@@ -29,31 +31,79 @@ public class Elevator {
 	boolean lamp3 = false;
 	boolean lamp4 = false;
 	
+	
+	
 	//Elevator motor?
 	//stationary=false; moving = true;
-	boolean motor = false;    //using this variable, the scheduler will determine if the elevator car is currently stationary or moving
 	boolean isMotorOn = false;
 	//Elevator door?
 	//closed = false; open = true;
 	boolean doors = false;
 	
+	
 	//variables to represent data received from scheduler
 	int currentFloor;
 	int destFloor;
 	
+	private DatagramSocket receiveSocket; //non primitive fields start as null
+	private DatagramSocket SendSocket;
+	private int currentfloor;
+	private int destinationfloor;
+	private boolean stationary;        //using this variable, the scheduler will determine if the elevator car is currently stationary or moving
+	private int portNumber;
 	
-	public Elevator(int port) {
-		
-		//Elevator (server) creates a DatagramSocket to use receive on port 69
-		try{
-			receiveSocket = new DatagramSocket(port);        //each elevator car will receive on different port
+	public Elevator(int portNumber)
+	{
+		this.stationary = true;
+		this.portNumber = portNumber;
+		try {
+			receiveSocket = new DatagramSocket(portNumber);       //each elevator car will receive on different port
 			arrivalMessageSocket = new DatagramSocket(5000);
-		} catch (SocketException e) {
+		}catch (SocketException e)
+		{
 			e.printStackTrace();
-			System.out.println("Cannot open socket on port 69.");
+			System.out.println("Elevator not created");
 		}
 	}
 	
+	private void getRequest()
+	{
+		byte data[] = new byte[100];
+	    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
+	    System.out.println("IntermediateHost: Waiting for Packet.\n");
+	    // Block until a datagram packet is received from receiveSocket.
+        try {
+        	System.out.printf("Elevator %s waiting for movement request\n",this.getName());
+        	receiveSocket.receive(receiveClientPacket);
+        }
+        catch(IOException e)
+        {
+        	System.out.print("IO Exception: likely:");
+            System.out.println("Receive Socket Timed Out.\n" + e);
+            e.printStackTrace();
+        }
+        
+        //request gotten
+        //fill in destination floor and assuming that we will just start moving for now  
+        System.out.println("got request");        
+        
+        try {
+        	Thread.sleep(10000);
+        }
+        catch(InterruptedException e)
+        {
+        	System.out.println("Stopping elevator");
+        }
+	}
+	
+	public int getPortNumber()
+	{
+		return this.portNumber;
+	}
+	public void run()
+	{
+		getRequest();
+	}
 	
 	
 	//This method is used to process the data received from scheduler 
@@ -75,10 +125,10 @@ public class Elevator {
 				//Assuming first index of packet is motor ON/OFF 
 				isMotorOn = (floorData[0]!=0); // converts byte into bool
 				if (isMotorOn == true) {
-					motor = true;
+					stationary = true;
 				}
 				else {
-					motor = false;
+					stationary = false;
 				}
 				receivePacketS = new String(floorData,0,receivePacket.getLength());    //convert the received packet to a String
 				System.out.println("Data received from scheduler (in bytes): " + receivePacket);
@@ -110,7 +160,7 @@ public class Elevator {
 				//Elevator starts moving towards currentFloor (floor 1 to floor 2) after receiving packet
 			   
 				doors = false;     //close doors
-				motor = true;      //elevator starts moving towards currentFloor
+				stationary = true;      //elevator starts moving towards currentFloor
 				
 				
 				try {
@@ -120,7 +170,7 @@ public class Elevator {
 				}
 				
 				//after arriving at currentFloor
-				motor = false;   //elevator stops moving
+				stationary = false;   //elevator stops moving
 				doors = true;    //open doors
 				
 				//send arrival message to scheduler
@@ -148,7 +198,7 @@ public class Elevator {
 			
 			//Close doors
 			doors = false;
-			motor = true;    //elevator starts moving again towards destination floor
+			stationary = true;    //elevator starts moving again towards destination floor
 			
 			//time taken to move from current floor to destination floor
 			//Example: 2nd floor to 5th floor:  (13*(5-2)=39seconds)
@@ -158,7 +208,7 @@ public class Elevator {
 			lamp3 = false;      //turn off destination floor lamp
 			button3 = false;      //turn off destination floor button
 			
-			motor = false;    //elevator stops moving
+			stationary = false;    //elevator stops moving
 			doors = true;     //open doors
 				
 			
