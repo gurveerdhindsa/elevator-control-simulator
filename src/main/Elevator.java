@@ -17,21 +17,9 @@ public class Elevator extends Thread {
 	private static DatagramPacket arrivalMessagePacket;
 	private String receivePacketS = "";
 	private final int floorInterval = 13;
-
 	
-	//Number of elevator buttons will depend on number of floors
-	boolean button1 = false;
-	boolean button2 = false;
-	boolean button3 = false;
-	boolean button4 = false;
-	
-	//Number of elevator lamps will depend on number of floors/buttons
-	boolean lamp1 = false;
-	boolean lamp2 = false;
-	boolean lamp3 = false;
-	boolean lamp4 = false;
-	
-	
+	boolean[] buttons;    //Number of elevator buttons will depend on number of floors
+	boolean[] lamps;      //Number of elevator lamps will depend on number of floors/buttons
 	
 	//Elevator motor?
 	//stationary=false; moving = true;
@@ -42,13 +30,11 @@ public class Elevator extends Thread {
 	
 	
 	//variables to represent data received from scheduler
-	int currentFloor;
-	int destFloor;
+	private int currentFloor;
+	private int destFloor;
 	
 	private DatagramSocket receiveSocket; //non primitive fields start as null
 	private DatagramSocket SendSocket;
-	private int currentfloor;
-	private int destinationfloor;
 	private boolean stationary;        //using this variable, the scheduler will determine if the elevator car is currently stationary or moving
 	private int portNumber;
 	
@@ -125,10 +111,10 @@ public class Elevator extends Thread {
 				//Assuming first index of packet is motor ON/OFF 
 				isMotorOn = (floorData[0]!=0); // converts byte into bool
 				if (isMotorOn == true) {
-					stationary = true;
+					this.stationary = true;
 				}
 				else {
-					stationary = false;
+					this.stationary = false;
 				}
 				receivePacketS = new String(floorData,0,receivePacket.getLength());    //convert the received packet to a String
 				System.out.println("Data received from scheduler (in bytes): " + receivePacket);
@@ -160,7 +146,7 @@ public class Elevator extends Thread {
 				//Elevator starts moving towards currentFloor (floor 1 to floor 2) after receiving packet
 			   
 				doors = false;     //close doors
-				stationary = true;      //elevator starts moving towards currentFloor
+				this.stationary = true;      //elevator starts moving towards currentFloor
 				
 				
 				try {
@@ -187,31 +173,24 @@ public class Elevator extends Thread {
 			
 			//After passenger gets on elevator
 			//Example of passenger selecting button inside elevator for which floor he wants to go to -> turning on button and lamp
-			if(destFloor==1) {
-				button1 = true;
-				lamp1 = true;
-			}
-			if(destFloor==2) {
-				button2 = true;
-				lamp2 = true;
-			}
+		    buttons[destFloor] = true;
+			lamps[destFloor] = true;
+			
 			
 			//Close doors
 			doors = false;
-			stationary = true;    //elevator starts moving again towards destination floor
+			this.stationary = true;    //elevator starts moving again towards destination floor
 			
 			//time taken to move from current floor to destination floor
 			//Example: 2nd floor to 5th floor:  (13*(5-2)=39seconds)
 			elevatorMoving(destFloor, currentFloor, floorInterval);
 			
 			//After arriving at destination floor
-			lamp3 = false;      //turn off destination floor lamp
-			button3 = false;      //turn off destination floor button
+			lamps[destFloor] = false;      //turn off destination floor lamp
+			buttons[destFloor] = false;      //turn off destination floor button
 			
-			stationary = false;    //elevator stops moving
-			doors = true;     //open doors
-				
-			
+			this.stationary = false;    //elevator stops moving
+			doors = true;     //open doors	
 			
 		}
 		
