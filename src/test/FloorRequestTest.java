@@ -16,15 +16,14 @@ import main.FloorRequest;
 public class FloorRequestTest {
 	FloorRequest fr;
 	
+	Timestamp timestamp = null;
+	int floor = 2,
+	    carButton = 4;
+	String floorButton = "Up";
+	
 	
 	@Before
 	public void initialize() {
-		// Mock data
-		Timestamp timestamp = null;
-		int floor = 2, 
-			carButton = 4;
-		String floorButton = "Up";
-
 		try {
 		    SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
 		    Date parsedDate = dateFormat.parse("14:05:15.0");
@@ -39,6 +38,18 @@ public class FloorRequestTest {
 	@Test
 	public void Should_Convert_Object_To_Byte_Array() throws ParseException, IOException {
 		assertTrue(fr.getBytes() instanceof byte[]);
+	}
+	
+	@Test
+	public void Should_Convert_Byte_Array_To_Object() {
+		// Convert our initialized object to a byte array then back to an object
+		FloorRequest result = (FloorRequest) fr.getObjectFromBytes(fr.getBytes());
+		
+		// Verify the timestamp, floor, car button and floor button match
+		assertTrue(result.getTimestamp().equals(this.timestamp));
+		assertTrue(result.getFloor() == this.floor);
+		assertTrue(result.getCarButton() == this.carButton);
+		assertTrue(result.getFloorButton().equals(this.floorButton));		
 	}
 
 }
