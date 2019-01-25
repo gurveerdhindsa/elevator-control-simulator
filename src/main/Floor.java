@@ -10,18 +10,17 @@ import java.sql.Timestamp;
 
 public class Floor implements Runnable {
 
-	private Thread floorRequestThread,
-				   elevatorMovingThread;
-	
-	private DatagramPacket sendPacket, 			// Packet to send to Scheduler
-						   receivePacket; 		// Packet to receive from Scheduler
+	private Thread sendThread,
+				   sendReceiveThread;
 	private DatagramSocket sendReceiveSocket; 	// Socket to send and receive packets
 
 	private List<FloorRequest> floorRequests;	// List of requests to be made
 
+	
+	
 	public Floor() {
-		floorRequestThread = new Thread(this, "floorRequest");
-		elevatorMovingThread = new Thread(this, "elevatorMoving");
+		sendThread = new Thread(this, "sendThread");
+		sendReceiveThread = new Thread(this, "sendReceiveThread");
 	
 		floorRequests = new ArrayList<FloorRequest>();
 
@@ -68,6 +67,8 @@ public class Floor implements Runnable {
 	}
 
 	public void send() {
+		//edit to send all requests with random 
+		// time in between requests
 		DatagramPacket packet;
 		try {
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -100,8 +101,17 @@ public class Floor implements Runnable {
 			e.printStackTrace();
 		}
 
+		//for now assumption is only message sent from
+		//scheduler to floor is elevator on the move 
+		//might need more later so might need 
+		//to check first byte of message msg[0]
+		//to decide what actions to take 
+		
 		// wait till elevator almost reaching floor 2
-		pause();
+		pause(); // or sleep to be consistent whilst getting rid of function overhead
+		         // sleep for 8000 milli seconds and then call stopElevator
+		
+		
 	}
 
 	public void stopElevator() {
@@ -128,20 +138,19 @@ public class Floor implements Runnable {
 	
 	public void start()
 	{
-		this.floorRequestThread.start();
-		this.elevatorMovingThread.start();
+		this.sendThread.start();
+		this.sendReceiveThread.start();
 	}
 	
 	@Override
 	public void run() {
-		if(Thread.currentThread().getName().equals("floorRequest"))
+		if(Thread.currentThread().getName().equals("sendThread"))
 		{
 			this.send();
 		}
 		else
 		{
 			this.receiveElevatorMovement();
-			this.stopElevator();
 		}
 		
 		

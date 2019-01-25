@@ -8,6 +8,10 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 public class FloorRequest implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	Timestamp timestamp;
 	int floor, 
 		carButton;
