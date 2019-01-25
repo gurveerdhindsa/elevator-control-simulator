@@ -6,6 +6,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 
 public class Elevator implements Runnable{
@@ -16,6 +17,7 @@ public class Elevator implements Runnable{
 	private int destinationfloor;
 	private boolean stationary;
 	private int portNumber;
+	private boolean doorsOpen;   //false = door closed 
 	Thread motorThread;
 	Thread messageThread;
 
@@ -82,6 +84,7 @@ public class Elevator implements Runnable{
 		//maybe create a schedulerElevator instance 
 		//fill in the required of port number convert it to bytes
 		//or looks like just port number might be enough for registration
+				
 		byte[] registerElev = new byte[] {0,0,0,0,0};
 		byte port = (byte) this.portNumber;
 		registerElev[4] = port;
@@ -114,9 +117,15 @@ public class Elevator implements Runnable{
 				//message should contain destination floor (and whether up or down) 
 				//or up or down can be calculated from destination floor - current flooor
 				//update destination floor field before starting move thread
-				//can do fancy console printing if like 
+				//can do fancy console printing if like
+				
+				//Message received format: [0 - Current Floor - Direction - Destination Floor]
+				currentfloor = msg[1];
+				destinationfloor = msg[3];
+				//direction = destinationfloor - currentfloor
 				 
 				System.out.println("Elevator moving");
+				stationary = false;
 				this.motorThread.start();
 				//send packet to scheduler that elevator moving(later iteration?)
 				System.out.println("Listening for possible new message");
@@ -129,11 +138,35 @@ public class Elevator implements Runnable{
 				//update this.currentFloor with current floor from message
 				//then stop elevator
 				this.motorThread.interrupt();
+				stationary = true;
 				 
 			}
 			
-			//else if msg[0] == 2 is door close. so close door(whatever field representing door)
+			//else if msg[0] == 2 is door close. so close door
 			//send back door closed to the scheduler 
+			//door close message received
+			else if(msg[0]==(byte)2 && msg.length==1) {
+				
+				System.out.println("Closing doors. ");
+				doorsOpen = false;
+				byte[] doorCloseMsg = new byte[] {2};
+				try {
+					System.out.println("Sending door close message. ");
+					DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, InetAddress.getLocalHost(),69);
+					DatagramSocket doorMsgSocket = new DatagramSocket();
+					doorMsgSocket.send(doorClosePkt);
+					doorMsgSocket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			//door open message received
+			else if(msg[0]==(byte)3 && msg.length==1) {
+				
+				System.out.println("Opening doors. ");
+				doorsOpen = true;
+			}
 		}
 		
 	}
@@ -160,19 +193,30 @@ public class Elevator implements Runnable{
 	{
 		
 		//here function should calculate the number of floors it needs to move 
+		int floorDiff = Math.abs(currentfloor-destinationfloor);
 		//multiply the avg 10000milliseconds to 1 floor by the number of floors 
 		try {
-			Thread.sleep(100000);
+			Thread.sleep(floorDiff*100000);
 			//if thread wakes up on its own then it got to the final destination 
 			//that was updated when the move request was received
 			//so we update current floor as that floor
-			//send packet to scheduler elevator has arrived 
+			//send packet to scheduler elevator has arrived
+			currentfloor = destinationfloor;
+			
+			byte[] arrivalMessage = new byte[] {4};   //byte 4 is used to represent arrival to destination
+			DatagramPacket arrivalMsgPkt = new DatagramPacket(arrivalMessage, arrivalMessage.length, InetAddress.getLocalHost(),69);
+			DatagramSocket arrivalMsgSocket = new DatagramSocket();
+			arrivalMsgSocket.send(arrivalMsgPkt);
+			arrivalMsgSocket.close();
+			
 			System.out.println("Elevator got to final destination");
 		} catch (InterruptedException e) {
 			System.out.println(e.getMessage());
 			System.out.println("Elevator stopped before final destination");
 			//if elevator was stopped can just print or something
 			//sendPacket to scheduler that elevator has stopped(maybe later iteration)
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		
 	}
