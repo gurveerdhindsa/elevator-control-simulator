@@ -80,6 +80,12 @@ public class Scheduler implements Runnable{
 			}
 			
 			//else if door closed  
+			else if((byte)elevatorMsg[0] == (byte)2) {
+				System.out.println("Received doors closed message from elevator.");
+				
+				//listen for floor message for new floorRequest 
+				//to interrupt elevator if needed 
+			}
 				
 		}
 	}
@@ -169,6 +175,22 @@ public class Scheduler implements Runnable{
 		}
 	}
 	
+	public void closeDoor() {
+		
+		System.out.println("Sending door close message. ");
+		byte[] doorCloseMsg = new byte[] {2};
+		try {
+			DatagramSocket sendDoorClose = new DatagramSocket();
+			SchedulerElevators selectedElevator = this.elevators.get(0);
+			DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, InetAddress.getLocalHost(),selectedElevator.portNumber);
+			sendDoorClose.send(doorClosePkt);
+			System.out.println("Sent door close message. ");
+			sendDoorClose.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public void start()
 	{
 		this.floorMsgThread.start();
@@ -189,6 +211,7 @@ public class Scheduler implements Runnable{
 		{
 			//createCloseDoor function to send close door 
 			//to our one elevator
+			this.closeDoor();
 		}
 		else
 		{
