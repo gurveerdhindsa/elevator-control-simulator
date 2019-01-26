@@ -282,6 +282,8 @@ public class Elevator implements Runnable{
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			Throwable  s = e.getCause();
+			System.out.println(s.getClass().getName());
 			System.out.printf("Elevator stopped at floor %d to answer request\n",currentfloor);			
 		}
 		

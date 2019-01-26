@@ -19,6 +19,41 @@ import main.Elevator;
 
 public class ElevatorTest {
 	
+	
+	@SuppressWarnings("deprecation")
+	@Test 
+	public void testRegistration()
+	{
+		Thread elevThread = new Thread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				Elevator elev = new Elevator(33);
+				elev.run();
+			}
+		});
+		
+		byte[] regist = new byte[50];
+		
+		try {
+			DatagramPacket registration = new DatagramPacket(regist,regist.length);
+			DatagramSocket getRegist = new DatagramSocket(69);
+			elevThread.start();
+			getRegist.receive(registration);
+			getRegist.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		assertTrue((int)regist[0] == 0);
+		assertTrue((int)regist[4] == 33);
+		
+		elevThread.stop();
+	}
+	
+	
 	@Test
 	public void testReceiveRequest()
 	{
@@ -68,7 +103,5 @@ public class ElevatorTest {
 		assertTrue((int)arrival[3] == 2);
 		
 	}
-	
-	
 
 }
