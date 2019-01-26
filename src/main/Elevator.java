@@ -23,6 +23,7 @@ public class Elevator implements Runnable{
 	private Thread messageThread;
 	private LinkedList<Integer>pendingDestinations;
 	private int direction; // 1 is up -1 is down
+	private int initial;
 
 	
 	public Elevator(int portNumber)
@@ -94,7 +95,7 @@ public class Elevator implements Runnable{
 	{
 		byte data[] = new byte[100];
 	    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
-	    System.out.println("IntermediateHost: Waiting for Packet.\n");
+	    //System.out.println("IntermediateHost: Waiting for Packet.\n");
 	    // Block until a datagram packet is received from receiveSocket.
         try {
         	System.out.printf("Elevatorwaiting for movement request\n");
@@ -111,11 +112,8 @@ public class Elevator implements Runnable{
         
         byte[] pcktmsg = receiveClientPacket.getData();
         
-        byte[] msgRcd = new byte[1];
-        msgRcd[0] = pcktmsg[0];
-        System.out.println(Arrays.toString(msgRcd));
         
-        return msgRcd;
+        return pcktmsg;
 
 	}
 	
@@ -164,7 +162,8 @@ public class Elevator implements Runnable{
 				//can do fancy console printing if like
 				
 				//Message received format: [0 - requestFloor - Direction - DestinationFloor]
-				
+				System.out.println("Got request with contents");
+				System.out.println(Arrays.toString(msg));
 				destinationfloor = msg[1];
 				direction = (this.currentfloor - destinationfloor)/
 						Math.abs(currentfloor - destinationfloor);
@@ -225,13 +224,18 @@ public class Elevator implements Runnable{
 	public void run()
 	{
 		System.out.println(Thread.currentThread().getName());
+		
 		if(Thread.currentThread().getName().equals("messageThread"))
 		{
 			this.forever();
 		}
-		else 
+		else if(Thread.currentThread().getName().equals("motorThread"))
 		{
-			handleMovement();
+			this.handleMovement();
+		}
+		else
+		{
+			this.start();
 		}
 
 	}
@@ -255,10 +259,11 @@ public class Elevator implements Runnable{
 			{
 				destination = this.peekPending();
 			}
-			byte[] arrivalMessage = new byte[3];   //byte 4 is used to represent arrival to destination
+			byte[] arrivalMessage = new byte[4];   //byte 4 is used to represent arrival to destination
 			arrivalMessage[0] = 4;
 			arrivalMessage[1] = (byte)pendingR;
 			arrivalMessage[2] = (byte)destination;
+			arrivalMessage[3] = (byte)currentfloor;
 			
 			DatagramPacket arrivalMsgPkt = new DatagramPacket(arrivalMessage, arrivalMessage.length, InetAddress.getLocalHost(),69);
 			DatagramSocket arrivalMsgSocket = new DatagramSocket();
@@ -303,6 +308,11 @@ public class Elevator implements Runnable{
 	public void exit()
 	{
 		System.exit(0);
+	}
+	
+	public static void main(String[] args)
+	{
+		
 	}
 	
 }
