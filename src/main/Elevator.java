@@ -321,14 +321,35 @@ public class Elevator implements Runnable{
 		}
 	}
 	
-	public int getCurrentFloor()
+	public synchronized int  getCurrentFloor()
 	{
 		return this.currentfloor;
 	}
 	
-	public int getDestFloor()
+	public synchronized int getDestFloor()
 	{
 		return this.destinationfloor;
+	}
+	
+	public synchronized void setDestFloor(int floor)
+	{
+		this.destinationfloor = floor;
+	}
+	
+	public synchronized void setCurrentFloor(int floor)
+	{
+		this.currentfloor = floor;
+	}
+	
+	public synchronized void setDirection()
+	{
+		this.direction = (this.destinationfloor - this.currentfloor)/
+				Math.abs(this.destinationfloor - this.currentfloor);
+	}
+	
+	public synchronized int getDirection()
+	{
+		return this.direction;
 	}
 	
 	public void exit()
@@ -356,7 +377,4 @@ public class Elevator implements Runnable{
 	 *    just noticed that currentfloor, direction, destinationfloor are being accessed by both messageThread and motor thread
 	 *    need synchronized methods for those
 	 **/
-	
-	 
-	
 }
