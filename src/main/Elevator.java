@@ -13,7 +13,6 @@ import java.util.LinkedList;
 public class Elevator implements Runnable{
 	
 	private DatagramSocket receiveSocket; //non primitive fields start as null
-	private DatagramSocket SendSocket;
 	private int currentfloor;
 	private int destinationfloor;
 	private boolean stationary;
@@ -24,6 +23,7 @@ public class Elevator implements Runnable{
 	private LinkedList<Integer>pendingDestinations;
 	private int direction; // 1 is up -1 is down
 	private int initial;
+	private int motorExit;
 
 	
 	public Elevator(int portNumber)
@@ -35,6 +35,7 @@ public class Elevator implements Runnable{
 		this.motorThread = new Thread(this, "motorThread");
 		this.messageThread = new Thread(this, "messageThread");
 		this.pendingDestinations = new LinkedList<>();
+		this.doorsOpen = true;
 	
 		try {
 			receiveSocket = new DatagramSocket(portNumber);
@@ -76,6 +77,17 @@ public class Elevator implements Runnable{
 			this.pendingDestinations.add(1, destination);
 		}
 		
+	}
+	
+	private synchronized int motorExit(int read)
+	{
+		if(read == 1)
+		{
+			return this.motorExit;
+		}
+		
+		this.motorExit = 1;
+		return 0;
 	}
 	private synchronized int anyPendingDest()
 	{
@@ -147,6 +159,11 @@ public class Elevator implements Runnable{
 		
 		while(true)
 		{
+			if(Thread.currentThread().isInterrupted())
+			{
+				motorExit(0);
+				return;
+			}
 			byte[] msg;
 			msg = getRequest();
 			
@@ -165,8 +182,8 @@ public class Elevator implements Runnable{
 				System.out.println("Got request with contents");
 				System.out.println(Arrays.toString(msg));
 				destinationfloor = msg[1];
-				direction = (this.currentfloor - destinationfloor)/
-						Math.abs(currentfloor - destinationfloor);
+				direction = (this.destinationfloor - this.currentfloor)/
+						Math.abs(this.destinationfloor - this.currentfloor);
 				addPendingDest((int)msg[3]);
 				 
 				stationary = false;
@@ -179,7 +196,7 @@ public class Elevator implements Runnable{
 			else if(msg[0] == (byte)1)
 			{
 				//update this.currentFloor with current floor from message
-				//then stop elevator
+				//should be if going up 
 				this.currentfloor = (int)msg[1];
 				addPendingDest((int)msg[2]);
 				this.motorThread.interrupt();
@@ -193,7 +210,7 @@ public class Elevator implements Runnable{
 			else if(msg[0]==(byte)2 && msg.length==1) {
 				
 				System.out.println("Closing doors. ");
-				doorsOpen = false;
+				this.doorsOpen = false;
 				byte[] doorCloseMsg = new byte[] {2};
 				try {
 					System.out.println("Sending door close message. ");
@@ -210,7 +227,7 @@ public class Elevator implements Runnable{
 			else if(msg[0]==(byte)3 && msg.length==1) {
 				
 				System.out.println("Opening doors. ");
-				doorsOpen = true;
+				this.doorsOpen = true;
 			}
 		}
 		
@@ -252,6 +269,10 @@ public class Elevator implements Runnable{
 			//that was updated when the move request was received
 			//so we update current floor as that floor
 			//send packet to scheduler elevator has arrived
+			
+			/**
+			 * @TODO make access to direction, stationary, currfloor, destfloor synchronized
+			 */
 			currentfloor = destinationfloor;
 			int pendingR = this.anyPendingDest();
 			int destination = 0;
@@ -294,6 +315,9 @@ public class Elevator implements Runnable{
 		while(mimicMovement())
 		{
 			this.destinationfloor = this.getPendingDest();
+			//make direction synchronized inside a function
+			this.direction = (this.destinationfloor - this.currentfloor)/
+					Math.abs(this.destinationfloor - this.currentfloor);
 		}
 	}
 	
@@ -316,5 +340,23 @@ public class Elevator implements Runnable{
 	{
 		
 	}
+	
+	/*
+	 *Elevator Sequence
+	 *Starts from else condition of run method 
+	 *1) Register self with Scheduler - Tested
+	 *2) Listen for requests
+	 *3) Gets request say [0,2,0,5] sets floor number as destination floor and puts car number into its pending dest list and start moving
+	 *4) Moves to floor 2 from floor 0, checks if any pending requests to service, tells scheduler it has arrived at 2 and moving to 5
+	 *4a) gets a stop request when it has slept for 10s or 9.999s(floor 1)  [1,1,4] format [1 - currentfloor - newCarbutton]
+	 *    if going up and new carbutton is lower than head of pendingDest put new carrbutton as head of pendingdest. This 
+	 *    way motor goes to 4th floor, then wakes up tells scheduler am at 4th floor but going to 5th and then goes to 5th floor.
+	 *    
+	 *    please look at the code, write new test cases and try different scenarios, if it fails correct logic.
+	 *    just noticed that currentfloor, direction, destinationfloor are being accessed by both messageThread and motor thread
+	 *    need synchronized methods for those
+	 **/
+	
+	 
 	
 }
