@@ -98,36 +98,6 @@ public class Elevator implements Runnable{
 		
 		return 1;
 	}
-	//function can maybe be properly named
-	//basically just listens for packets from
-	//scheduler.
-	// can be moved into the while loop of 
-	//forever and cleaned up 
-	public byte[]  getRequest()
-	{
-		byte data[] = new byte[100];
-	    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
-	    //System.out.println("IntermediateHost: Waiting for Packet.\n");
-	    // Block until a datagram packet is received from receiveSocket.
-        try {
-        	System.out.printf("Elevatorwaiting for movement request\n");
-        	this.receiveSocket.receive(receiveClientPacket);
-        }
-        catch(IOException e)
-        {
-        	System.out.print("IO Exception: likely:");
-            System.out.println("Receive Socket Timed Out.\n" + e);
-            e.printStackTrace();
-        }
-        
-        System.out.println("got request"); 
-        
-        byte[] pcktmsg = receiveClientPacket.getData();
-        
-        
-        return pcktmsg;
-
-	}
 	
 	public void forever()
 	{
@@ -159,13 +129,30 @@ public class Elevator implements Runnable{
 		
 		while(true)
 		{
+			
+			byte data[] = new byte[100];
+		    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
+		    //System.out.println("IntermediateHost: Waiting for Packet.\n");
+		    // Block until a datagram packet is received from receiveSocket.
+	        try {
+	        	System.out.printf("Elevatorwaiting for movement request\n");
+	        	this.receiveSocket.receive(receiveClientPacket);
+	        }
+	        catch(IOException e)
+	        {
+	        	System.out.print("IO Exception: likely:");
+	            System.out.println("Receive Socket Timed Out.\n" + e);
+	            e.printStackTrace();
+	        }
+			
 			if(Thread.currentThread().isInterrupted())
 			{
 				motorExit(0);
 				return;
 			}
-			byte[] msg;
-			msg = getRequest();
+			
+	        System.out.println("got request"); 
+			byte[] msg = receiveClientPacket.getData();
 			
 			//for message sequence here, need destination floor and 
 			//what else?
