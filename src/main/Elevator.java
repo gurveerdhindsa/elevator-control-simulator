@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.LinkedList;
 
 public class Elevator implements Runnable{
 	
@@ -18,8 +19,10 @@ public class Elevator implements Runnable{
 	private boolean stationary;
 	private int portNumber;
 	private boolean doorsOpen;   //false = door closed 
-	Thread motorThread;
-	Thread messageThread;
+	private Thread motorThread;
+	private Thread messageThread;
+	private LinkedList<Integer>pendingDestinations;
+	private int direction; // 1 is up -1 is down
 
 	
 	public Elevator(int portNumber)
@@ -30,6 +33,7 @@ public class Elevator implements Runnable{
 		this.destinationfloor = 0;
 		this.motorThread = new Thread(this, "motorThread");
 		this.messageThread = new Thread(this, "messageThread");
+		this.pendingDestinations = new LinkedList<>();
 	
 		try {
 			receiveSocket = new DatagramSocket(portNumber);
@@ -41,6 +45,46 @@ public class Elevator implements Runnable{
 	}
 	
 	
+	private synchronized int peekPending()
+	{
+		return this.pendingDestinations.peekFirst();
+	}
+	private synchronized int getPendingDest()
+	{
+		return this.pendingDestinations.removeFirst();
+	}
+	
+	private synchronized void addPendingDest(int destination)
+	{
+		if(this.pendingDestinations.isEmpty())
+		{
+			this.pendingDestinations.add(destination);
+			return;
+		}
+		
+		int currHead = this.pendingDestinations.peekFirst();
+		int diff = destination - currHead;
+		if ((diff < 0 && direction == 1) ||
+				(diff > 0 && direction != 1))
+		{
+			this.pendingDestinations.addFirst(destination);
+		}
+		else if((diff > 0 && direction == 1) ||
+				(diff < 0 && direction !=1))
+		{
+			this.pendingDestinations.add(1, destination);
+		}
+		
+	}
+	private synchronized int anyPendingDest()
+	{
+		if(this.pendingDestinations.isEmpty())
+		{
+			return 0;
+		}
+		
+		return 1;
+	}
 	//function can maybe be properly named
 	//basically just listens for packets from
 	//scheduler.
@@ -119,16 +163,16 @@ public class Elevator implements Runnable{
 				//update destination floor field before starting move thread
 				//can do fancy console printing if like
 				
-				//Message received format: [0 - Current Floor - Direction - Destination Floor]
-				currentfloor = msg[1];
-				destinationfloor = msg[3];
-				//direction = destinationfloor - currentfloor
+				//Message received format: [0 - requestFloor - Direction - DestinationFloor]
+				
+				destinationfloor = msg[1];
+				direction = (this.currentfloor - destinationfloor)/
+						Math.abs(currentfloor - destinationfloor);
+				addPendingDest((int)msg[3]);
 				 
-				System.out.println("Elevator moving");
 				stationary = false;
 				this.motorThread.start();
 				//send packet to scheduler that elevator moving(later iteration?)
-				System.out.println("Listening for possible new message");
 				
 			}
 			//if scheduler is interrupting an elevator before its gets to it's final destination then 
@@ -137,6 +181,8 @@ public class Elevator implements Runnable{
 			{
 				//update this.currentFloor with current floor from message
 				//then stop elevator
+				this.currentfloor = (int)msg[1];
+				addPendingDest((int)msg[2]);
 				this.motorThread.interrupt();
 				stationary = true;
 				 
@@ -189,43 +235,74 @@ public class Elevator implements Runnable{
 		}
 
 	}
-	public void handleMovement()
+	
+	private Boolean mimicMovement()
 	{
-		
 		//here function should calculate the number of floors it needs to move 
-		int floorDiff = Math.abs(currentfloor-destinationfloor);
+		int floorDiff = Math.abs(currentfloor - destinationfloor);
 		//multiply the avg 10000milliseconds to 1 floor by the number of floors 
 		try {
-			Thread.sleep(floorDiff*100000);
+			System.out.println("Elevator moving");
+			Thread.sleep(floorDiff*10000);
 			//if thread wakes up on its own then it got to the final destination 
 			//that was updated when the move request was received
 			//so we update current floor as that floor
 			//send packet to scheduler elevator has arrived
 			currentfloor = destinationfloor;
+			int pendingR = this.anyPendingDest();
+			int destination = 0;
+			if(pendingR == 1)
+			{
+				destination = this.peekPending();
+			}
+			byte[] arrivalMessage = new byte[3];   //byte 4 is used to represent arrival to destination
+			arrivalMessage[0] = 4;
+			arrivalMessage[1] = (byte)pendingR;
+			arrivalMessage[2] = (byte)destination;
 			
-			byte[] arrivalMessage = new byte[] {4};   //byte 4 is used to represent arrival to destination
 			DatagramPacket arrivalMsgPkt = new DatagramPacket(arrivalMessage, arrivalMessage.length, InetAddress.getLocalHost(),69);
 			DatagramSocket arrivalMsgSocket = new DatagramSocket();
 			arrivalMsgSocket.send(arrivalMsgPkt);
 			arrivalMsgSocket.close();
 			
-			System.out.println("Elevator got to final destination");
-		} catch (InterruptedException e) {
-			System.out.println(e.getMessage());
-			System.out.println("Elevator stopped before final destination");
-			//if elevator was stopped can just print or something
-			//sendPacket to scheduler that elevator has stopped(maybe later iteration)
+			System.out.printf("Elevator got to destination floor: %d\n",destinationfloor);
+			
+			return pendingR == 1;
+			
+			
 		} catch (IOException e) {
+			
+			//some better handling here(later iteration)
 			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.printf("Elevator stopped at floor %d to answer request\n",currentfloor);			
 		}
 		
+		return true;
+	}
+	public void handleMovement()
+	{
+		while(mimicMovement())
+		{
+			this.destinationfloor = this.getPendingDest();
+		}
 	}
 	
-	
-	public static void main( String args[] ) {
-		
-		Elevator server = new Elevator(23);
-		server.start();
-		//send port number to scheduler first
+	public int getCurrentFloor()
+	{
+		return this.currentfloor;
 	}
+	
+	public int getDestFloor()
+	{
+		return this.destinationfloor;
+	}
+	
+	public void exit()
+	{
+		System.exit(0);
+	}
+	
 }
