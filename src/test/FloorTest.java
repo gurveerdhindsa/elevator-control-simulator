@@ -15,40 +15,6 @@ public class FloorTest {
 
 
 
-	@SuppressWarnings("deprecation")
-	@Test 
-	public void floorRegistration() {
-		
-		Thread floorThread = new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				Floor f = new Floor();
-				f.run();
-			}
-		});
-		
-		byte[] regist = new byte[100];
-		try {
-			
-			DatagramPacket registration = new DatagramPacket(regist,regist.length);
-			DatagramSocket getRegist = new DatagramSocket(45);
-
-			floorThread.start();
-			getRegist.receive(registration);
-			getRegist.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		//assertTrue((int)regist[0] == 4) ;
-		//assertTrue((int)regist[1] == 33);
-		
-		floorThread.stop();
-		
-	}
-	
 	@Test
 	public void testReceiveRequest()
 	{
