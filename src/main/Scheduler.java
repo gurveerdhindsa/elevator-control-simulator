@@ -1,4 +1,5 @@
 package main;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
@@ -63,7 +64,6 @@ public class Scheduler implements Runnable{
 			
 			System.out.println("Elevator message received");
 			
-			
 			//think for register elevator 
 			//jsut need to send portNumber and 
 			//the msg[0] byte signifying register elevator msg
@@ -109,6 +109,10 @@ public class Scheduler implements Runnable{
 			
 			System.out.println("Floor message received");
 			
+			//adding new request to front of requests linked list
+			//the following line is causing java.io.StreamCorruptedException: invalid stream header: 00ACED00 error: PLEASE HELP
+			FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(floorMsg);
+			this.addRequest(r);
 			
 			//floor request
 			//proper code should extract floor number and other info
@@ -146,7 +150,16 @@ public class Scheduler implements Runnable{
 				//otherwise would miss the floor arrival notification from
 				//floor)
 				System.out.println("Sending move command to elevator and notifying floor");
-				byte[] data = new byte[] {0,5};
+				//byte[] data = new byte[] {0,5};
+				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+				try {
+					buffer.write((byte) 0);
+					buffer.write(requests.get(0).getBytes());
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				byte[] data = buffer.toByteArray();
 				byte[] floorData = new  byte[] {2};
 				
 				try {
@@ -173,6 +186,14 @@ public class Scheduler implements Runnable{
 				//process if you need to stop elevator at this floor its approaching
 			}
 		}
+	}
+	public synchronized boolean isRequestEmpty()
+	{
+		return requests.isEmpty();
+	}
+	public synchronized void addRequest(FloorRequest r)
+	{
+		requests.add(r);
 	}
 	
 	public void closeDoor() {

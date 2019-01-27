@@ -7,21 +7,27 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.junit.Test;
 
 import main.Elevator;
 import main.Floor;
+import main.FloorRequest;
 public class FloorTest {
 
-
-	
+	Timestamp timestamp = null;
+	Date parsedDate = null;
 	
 	@SuppressWarnings("deprecation")
 	@Test 
 	// start listening to the Floor thread
 	public void testRegistration()
 	{
+		FloorRequest fr = new FloorRequest();
 		Thread floorThread = new Thread(new Runnable()
 		{
 			@Override
@@ -31,7 +37,7 @@ public class FloorTest {
 			}
 		});
 		
-		byte[] regist = new byte[50];
+		byte[] regist = new byte[100];
 		
 		try {
 			DatagramPacket registration = new DatagramPacket(regist,regist.length);
@@ -39,9 +45,20 @@ public class FloorTest {
 			floorThread.start();
 			getRegist.receive(registration);
 			// read in buffer 
+			FloorRequest result = (FloorRequest) fr.getObjectFromBytes(regist);
+			assertTrue(result.getFloor() == 2);
+			assertTrue(result.getCarButton() == 4);
+			SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
+		    
+			try {
+				parsedDate = dateFormat.parse("14:05:15.0");
+			} catch (ParseException e) {
 			
-			
-			
+				e.printStackTrace();
+			}
+		    timestamp = new Timestamp(parsedDate.getTime());
+			assertTrue(result.getTimestamp() == timestamp);
+			assertTrue(result.getFloorButton() =="UP");
 			
 			getRegist.close();
 		} catch (IOException e) {

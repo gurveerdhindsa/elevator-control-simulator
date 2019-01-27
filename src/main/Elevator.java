@@ -165,7 +165,7 @@ public class Elevator implements Runnable{
 				//update destination floor field before starting move thread
 				//can do fancy console printing if like
 				
-				//Message received format: [0 - requestFloor - Direction - DestinationFloor]
+				//Message received format: [0 - DestinationFloor]
 				System.out.println("Got request with contents");
 				System.out.println(Arrays.toString(msg));
 				destinationfloor = msg[1];
@@ -341,7 +341,8 @@ public class Elevator implements Runnable{
 	
 	public static void main(String[] args)
 	{
-		
+		Elevator e = new Elevator(23);
+		e.run();
 	}
 	
 	/*
