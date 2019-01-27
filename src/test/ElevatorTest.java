@@ -103,5 +103,36 @@ public class ElevatorTest {
 		assertTrue((int)arrival[3] == 2);
 		
 	}
+	
+	@Test
+	public void testSendDoorCloseMsg()
+	{
+		Thread elevThread = new Thread(new Runnable()
+		{
+		@Override
+		public void run()
+		{
+			Elevator elev = new Elevator(23);
+			elev.run();
+		}
+			});
+	
+		elevThread.start();
+		byte[] doorCloseMsg = new byte[] {2};
+		try {
+			DatagramPacket doorClosePckt = new DatagramPacket(doorCloseMsg,doorCloseMsg.length,
+					InetAddress.getLocalHost(),23);
+			DatagramSocket doorCloseSocket = new DatagramSocket();
+			doorCloseSocket.receive(doorClosePckt);
+			doorCloseSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			fail("Did not send ");
+			e.printStackTrace();
+		} 
+		
+		assertTrue((byte)doorCloseMsg[0] == 2);
+
+		}
 
 }
