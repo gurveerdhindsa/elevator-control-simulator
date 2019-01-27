@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 
 import org.junit.Test;
@@ -34,10 +35,11 @@ public class FloorTest {
 			public void run()
 			{
 				Floor floor = new Floor();
+				floor.start();
 			}
 		});
 		
-		byte[] regist = new byte[100];
+		byte[] regist = new byte[300];
 		
 		try {
 			DatagramPacket registration = new DatagramPacket(regist,regist.length);
@@ -45,7 +47,11 @@ public class FloorTest {
 			floorThread.start();
 			getRegist.receive(registration);
 			// read in buffer 
-			FloorRequest result = (FloorRequest) fr.getObjectFromBytes(regist);
+			//System.out.println(Arrays.toString(regist));
+			byte[] actualMsg = Arrays.copyOfRange(regist, 1, registration.getLength());
+			//System.out.println(Arrays.toString(actualMsg));
+			System.out.println(actualMsg.length);
+			FloorRequest result = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
 			assertTrue(result.getFloor() == 2);
 			assertTrue(result.getCarButton() == 4);
 			SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
@@ -57,8 +63,8 @@ public class FloorTest {
 				e.printStackTrace();
 			}
 		    timestamp = new Timestamp(parsedDate.getTime());
-			assertTrue(result.getTimestamp() == timestamp);
-			assertTrue(result.getFloorButton() =="UP");
+			assertTrue(result.getTimestamp().equals(timestamp));
+			assertTrue(result.getFloorButton().equals("Up"));
 			
 			getRegist.close();
 		} catch (IOException e) {
@@ -66,10 +72,9 @@ public class FloorTest {
 			e.printStackTrace();
 		}
 		
-		assertTrue((int)regist[0] == 0);
-		assertTrue((int)regist[4] == 33);
+		assertTrue(regist[0] == (byte)0);
+		//assertTrue((int)regist[4] == 33);
 		
-		floorThread.stop();
 	}
 //	@Test
 //	public void testReceiveRequest()
