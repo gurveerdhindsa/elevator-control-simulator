@@ -32,6 +32,9 @@ public class FloorRequest implements Serializable {
 
 		System.out.println("Creating a floor request with:\n\t" + "Timestamp: " + timestamp + "\n\tFloor: " + floor + "\n\tCar Button: " + carButton + "\n\tFloor Button: " + floorButton);
 	}
+	public FloorRequest() {
+		
+	}
 	
 	public byte [] getBytes() {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
