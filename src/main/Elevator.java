@@ -171,7 +171,7 @@ public class Elevator implements Runnable{
 				destinationfloor = msg[1];
 				direction = (this.destinationfloor - this.currentfloor)/
 						Math.abs(this.destinationfloor - this.currentfloor);
-				addPendingDest((int)msg[3]);
+				addPendingDest((int)msg[2]);
 				 
 				stationary = false;
 				this.motorThread.start();
@@ -290,7 +290,7 @@ public class Elevator implements Runnable{
 			System.out.printf("Elevator stopped at floor %d to answer request\n",currentfloor);			
 		}
 		
-		return true;
+		return false;
 	}
 	public void handleMovement()
 	{

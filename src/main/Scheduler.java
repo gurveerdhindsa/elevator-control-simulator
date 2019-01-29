@@ -160,12 +160,13 @@ public class Scheduler implements Runnable{
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 				buffer.write((byte) 0);
+				buffer.write((byte) requests.get(0).getFloor());
 				buffer.write((byte) requests.get(0).getCarButton());
 				
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
 				
-				byte[] floorData = new  byte[] {2};
+				byte[] floorData = new  byte[] {3};
 				
 				try {
 					DatagramSocket sendElevatorMove = new DatagramSocket();
