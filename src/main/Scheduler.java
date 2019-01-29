@@ -3,6 +3,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 
@@ -82,7 +84,6 @@ public class Scheduler implements Runnable{
 			//else if door closed  
 			else if((byte)elevatorMsg[0] == (byte)2) {
 				System.out.println("Received doors closed message from elevator.");
-				
 				//listen for floor message for new floorRequest 
 				//to interrupt elevator if needed 
 			}
@@ -133,7 +134,7 @@ public class Scheduler implements Runnable{
 				isEmpty();
 
 				//[Should have two arraylists for up and down requests for now]
-				//single elevator  for now so definitely selecting 
+				//single elevator for now so definitely selecting 
 				//elevator at index 0, if elevator is moving 
 				//check elevators current floor & direction, if 
 				//same direction as request and difference between
@@ -160,8 +161,8 @@ public class Scheduler implements Runnable{
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 				buffer.write((byte) 0);
-				buffer.write((byte) requests.get(0).floor);
-				buffer.write((byte) requests.get(0).carButton);
+				buffer.write((byte) requests.get(0).getFloor());
+				buffer.write((byte) requests.get(0).getCarButton());
 				
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
@@ -186,9 +187,47 @@ public class Scheduler implements Runnable{
 				}
 				
 			}
-			else if(floorMsg[0] == (byte)3)
+			//receiving elevator approaching next floor message every 8 seconds fro floor
+			else if(floorMsg[0] == (byte)4)
 			{
+				SchedulerElevators elevator = new SchedulerElevators();
 				System.out.println("Received elevator approaching floor from floor");
+				elevator.currentFloor = elevator.currentFloor+1;
+				
+				//check list for request at that floor
+				if(requests.get(elevator.currentFloor) != null) {
+					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+					buffer.write((byte) 1);
+					buffer.write((byte) requests.get(elevator.currentFloor).getFloor());
+					
+					byte[] stopData = buffer.toByteArray();
+					
+					ByteArrayOutputStream request = new ByteArrayOutputStream();
+					request.write((byte) 0);
+					request.write((byte) requests.get(elevator.currentFloor).getFloor());
+					request.write((byte) requests.get(elevator.currentFloor).getCarButton());
+					
+					byte[] newRequest = request.toByteArray();
+					
+					try {
+						DatagramSocket sendInterrupt = new DatagramSocket();
+						SchedulerElevators selectedElevator = this.elevators.get(0);
+						DatagramPacket elevatorStopPckt = 
+								new DatagramPacket(stopData,stopData.length,
+										InetAddress.getLocalHost(),selectedElevator.portNumber);
+						DatagramPacket newRequestPckt = 
+								new DatagramPacket(newRequest,newRequest.length,
+										InetAddress.getLocalHost(),selectedElevator.portNumber);
+						sendInterrupt.send(elevatorStopPckt);
+						System.out.println("Sent stop");
+						sendInterrupt.send(newRequestPckt);
+						System.out.println("Sent movement");
+						sendInterrupt.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
 				//process if you need to stop elevator at this floor its approaching
 			}
 		}
