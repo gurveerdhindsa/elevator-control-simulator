@@ -66,7 +66,7 @@ public class ElevatorTest {
 				});
 		
 		elevThread.start();
-		byte[] request = new byte[] {0, 2, 0, 5};
+		byte[] request = new byte[] {0, 2, 5, 0};
 		try {
 			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
 					InetAddress.getLocalHost(),23);
