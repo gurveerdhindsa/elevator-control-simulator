@@ -76,11 +76,8 @@ public class Floor implements Runnable {
 			buffer.write((byte) 0);
 			// For now, we will just send one floor request
 			buffer.write(floorRequests.get(0).getBytes());
-
 			byte[] request = buffer.toByteArray();
-
 			packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
-
 			System.out.println("Sending floor request");
 
 			sendReceiveSocket.send(packet);
@@ -89,30 +86,53 @@ public class Floor implements Runnable {
 		}
 	}
 
-	public void receiveElevatorMovement() {
+	public void receiveElevatorMovement() throws InterruptedException, UnknownHostException {
 		byte[] waitforMove = new byte[100];
-
 		DatagramPacket movement = new DatagramPacket(waitforMove, waitforMove.length);
-
 		try {
 			sendReceiveSocket.receive(movement);
 			System.out.println("Receive that elevator is moving to floor");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
+		
 		//for now assumption is only message sent from
 		//scheduler to floor is elevator on the move 
 		//might need more later so might need 
 		//to check first byte of message msg[0]
 		//to decide what actions to take 
 		
+	
+		if (waitforMove[0] == (byte)3) {
+			notifyScheduler();
+		}
+		
 		// wait till elevator almost reaching floor 2
+		//remove pause() after
 		pause(); // or sleep to be consistent whilst getting rid of function overhead
 		         // sleep for 8000 milli seconds and then call stopElevator
 		
 		
 	}
+
+	private void notifyScheduler() throws InterruptedException, UnknownHostException {
+		
+
+		Thread.sleep(8000);
+		
+		try {
+			byte[] floortofloor = new byte [100];
+			floortofloor[0] = (byte)4;
+			DatagramSocket sendToScheduler = new DatagramSocket();
+			DatagramPacket packet = new DatagramPacket(floortofloor, floortofloor.length, InetAddress.getLocalHost(), 45 );
+			sendToScheduler.send(packet);
+		}	catch (IOException e) {
+				e.printStackTrace();
+		}
+	}
+		
+			
+		
 
 	public void stopElevator() {
 		byte[] stopelevator = new byte[] { 3 };
@@ -150,7 +170,11 @@ public class Floor implements Runnable {
 		}
 		else
 		{
-			this.receiveElevatorMovement();
+			try {
+				this.receiveElevatorMovement();
+			} catch (InterruptedException | UnknownHostException e) {
+				e.printStackTrace();
+			}
 		}
 		
 		
