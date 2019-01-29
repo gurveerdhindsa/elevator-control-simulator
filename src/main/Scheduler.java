@@ -160,8 +160,8 @@ public class Scheduler implements Runnable{
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 				buffer.write((byte) 0);
-				buffer.write((byte) requests.get(0).getFloor());
-				buffer.write((byte) requests.get(0).getCarButton());
+				buffer.write((byte) requests.get(0).floor);
+				buffer.write((byte) requests.get(0).carButton);
 				
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
