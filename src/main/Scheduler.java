@@ -133,7 +133,7 @@ public class Scheduler implements Runnable{
 				isEmpty();
 
 				//[Should have two arraylists for up and down requests for now]
-				//single elevator for now so definitely selecting 
+				//single elevator  for now so definitely selecting 
 				//elevator at index 0, if elevator is moving 
 				//check elevators current floor & direction, if 
 				//same direction as request and difference between
