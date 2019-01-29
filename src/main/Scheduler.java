@@ -95,7 +95,7 @@ public class Scheduler implements Runnable{
 		while(true)
 		{
 			//listen for elevator message
-			byte []floorMsg = new byte[100];
+			byte []floorMsg = new byte[300];
 			DatagramPacket packet = new DatagramPacket(floorMsg, floorMsg.length);
 			
 			try {
@@ -109,10 +109,16 @@ public class Scheduler implements Runnable{
 			
 			System.out.println("Floor message received");
 			
+			//removing first 0 byte from received packet
+			byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
+			
 			//adding new request to front of requests linked list
 			//the following line is causing java.io.StreamCorruptedException: invalid stream header: 00ACED00 error: PLEASE HELP
-			FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(floorMsg);
+			FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
 			this.addRequest(r);
+			System.out.println(Arrays.toString(actualMsg));
+			
+			
 			
 			//floor request
 			//proper code should extract floor number and other info
@@ -150,16 +156,15 @@ public class Scheduler implements Runnable{
 				//otherwise would miss the floor arrival notification from
 				//floor)
 				System.out.println("Sending move command to elevator and notifying floor");
-				//byte[] data = new byte[] {0,5};
+				
+				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-				try {
-					buffer.write((byte) 0);
-					buffer.write(requests.get(0).getBytes());
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+				buffer.write((byte) 0);
+				buffer.write((byte) requests.get(0).getCarButton());
+				
 				byte[] data = buffer.toByteArray();
+				System.out.println("Sent following to elevator: " + Arrays.toString(data));
+				
 				byte[] floorData = new  byte[] {2};
 				
 				try {
