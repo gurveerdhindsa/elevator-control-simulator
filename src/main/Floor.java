@@ -78,9 +78,11 @@ public class Floor implements Runnable {
 			buffer.write(floorRequests.get(0).getBytes());
 
 			byte[] request = buffer.toByteArray();
-
+			
 			packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
 
+			System.out.println(Arrays.toString(request));
+			System.out.println(request.length);
 			System.out.println("Sending floor request");
 
 			sendReceiveSocket.send(packet);

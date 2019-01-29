@@ -52,8 +52,8 @@ public class FloorTest {
 			//System.out.println(Arrays.toString(actualMsg));
 			System.out.println(actualMsg.length);
 			FloorRequest result = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
-			assertTrue(result.getFloor() == 2);
-			assertTrue(result.getCarButton() == 4);
+			assertTrue(result.floor == 2);
+			assertTrue(result.carButton == 4);
 			SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
 		    
 			try {
@@ -63,8 +63,8 @@ public class FloorTest {
 				e.printStackTrace();
 			}
 		    timestamp = new Timestamp(parsedDate.getTime());
-			assertTrue(result.getTimestamp().equals(timestamp));
-			assertTrue(result.getFloorButton().equals("Up"));
+			assertTrue(result.timestamp.equals(timestamp));
+			assertTrue(result.floorButton.equals("Up"));
 			
 			getRegist.close();
 		} catch (IOException e) {
