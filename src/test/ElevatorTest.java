@@ -20,7 +20,6 @@ import main.Elevator;
 public class ElevatorTest {
 	
 	
-	@SuppressWarnings("deprecation")
 	@Test 
 	public void testRegistration()
 	{
@@ -50,7 +49,6 @@ public class ElevatorTest {
 		assertTrue((int)regist[0] == 0);
 		assertTrue((int)regist[4] == 33);
 		
-		elevThread.stop();
 	}
 	
 	
@@ -68,7 +66,7 @@ public class ElevatorTest {
 				});
 		
 		elevThread.start();
-		byte[] request = new byte[] {0, 2, 0, 5};
+		byte[] request = new byte[] {0, 2, 5, 0};
 		try {
 			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
 					InetAddress.getLocalHost(),23);
@@ -104,7 +102,7 @@ public class ElevatorTest {
 		
 	}
 	
-	@Test
+	/*@Test
 	public void testSendDoorCloseMsg()
 	{
 		Thread elevThread = new Thread(new Runnable()
@@ -133,6 +131,6 @@ public class ElevatorTest {
 		
 		assertTrue((byte)doorCloseMsg[0] == 2);
 
-		}
+		}*/
 
 }

@@ -18,11 +18,9 @@ public class FloorRequest implements Serializable {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private Timestamp timestamp;
-	private int floor, 
-		        carButton;
-	private String floorButton;
+	public Timestamp timestamp;
+	public int floor, carButton;
+	public String floorButton;
 	
 	public FloorRequest(Timestamp timestamp, int floor, int carButton, String floorButton) {
 		this.timestamp = timestamp;
@@ -70,21 +68,5 @@ public class FloorRequest implements Serializable {
 		}
 		
 		return result;
-	}
-	
-	public Timestamp getTimestamp() {
-		return this.timestamp;
-	}
-	
-	public int getFloor() {
-		return this.floor;
-	}
-	
-	public int getCarButton() {
-		return this.carButton;
-	}
-	
-	public String getFloorButton() {
-		return this.floorButton;
 	}
 }

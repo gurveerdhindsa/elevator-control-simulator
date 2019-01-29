@@ -46,10 +46,10 @@ public class FloorRequestTest {
 		FloorRequest result = (FloorRequest) fr.getObjectFromBytes(fr.getBytes());
 		
 		// Verify the timestamp, floor, car button and floor button match
-		assertTrue(result.getTimestamp().equals(this.timestamp));
-		assertTrue(result.getFloor() == this.floor);
-		assertTrue(result.getCarButton() == this.carButton);
-		assertTrue(result.getFloorButton().equals(this.floorButton));		
+		assertTrue(result.timestamp.equals(this.timestamp));
+		assertTrue(result.floor == this.floor);
+		assertTrue(result.carButton == this.carButton);
+		assertTrue(result.floorButton.equals(this.floorButton));		
 	}
 
 }

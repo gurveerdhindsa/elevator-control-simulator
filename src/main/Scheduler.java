@@ -133,7 +133,7 @@ public class Scheduler implements Runnable{
 				isEmpty();
 
 				//[Should have two arraylists for up and down requests for now]
-				//single elevator for now so definitely selecting 
+				//single elevator  for now so definitely selecting 
 				//elevator at index 0, if elevator is moving 
 				//check elevators current floor & direction, if 
 				//same direction as request and difference between
@@ -160,12 +160,13 @@ public class Scheduler implements Runnable{
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 				buffer.write((byte) 0);
-				buffer.write((byte) requests.get(0).getCarButton());
+				buffer.write((byte) requests.get(0).floor);
+				buffer.write((byte) requests.get(0).carButton);
 				
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
 				
-				byte[] floorData = new  byte[] {2};
+				byte[] floorData = new  byte[] {3};
 				
 				try {
 					DatagramSocket sendElevatorMove = new DatagramSocket();
