@@ -60,7 +60,10 @@ public class Floor implements Runnable {
 					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
 				}
 			}
-			floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
+			if (timestamp != null) {
+				floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
+			}
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -71,6 +74,7 @@ public class Floor implements Runnable {
 		// time in between requests
 		DatagramPacket packet;
 		try {
+			System.out.println(floorRequests.size());
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 			
 			for (FloorRequest floorRequest : floorRequests) {
@@ -110,9 +114,9 @@ public class Floor implements Runnable {
 		//to decide what actions to take 
 		
 	
-		if (waitforMove[0] == (byte)3) {
-			notifyScheduler();
-		}
+//		if (waitforMove[0] == (byte)3) {
+//			notifyScheduler();
+//		}
 		
 		// wait till elevator almost reaching floor 2
 		//remove pause() after
