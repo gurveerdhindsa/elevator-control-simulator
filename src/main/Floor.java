@@ -41,7 +41,7 @@ public class Floor implements Runnable {
 			String floorButton = null;
 
 			while ((input = br.readLine()) != null) {
-				String[] inputFields = input.split(":", 2);
+				String[] inputFields = input.trim().split(":", 2);
 				if (inputFields[0].equals("Time")) {
 					try {
 						SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
@@ -51,16 +51,16 @@ public class Floor implements Runnable {
 						e.printStackTrace();
 					}
 				} else if (inputFields[0].equals("Floor")) {
-					floor = Integer.parseInt(inputFields[1].trim());
+					floor = Integer.parseInt(inputFields[1]);
 				} else if (inputFields[0].equals("Car Button")) {
-					carButton = Integer.parseInt(inputFields[1].trim());
+					carButton = Integer.parseInt(inputFields[1]);
 				} else if (inputFields[0].equals("Floor Button")) {
 					floorButton = inputFields[1].trim();
+				} else if (input.isEmpty() && timestamp != null && !floorButton.isEmpty()) {
+					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
 				}
 			}
-
 			floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
-
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -72,17 +72,24 @@ public class Floor implements Runnable {
 		DatagramPacket packet;
 		try {
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-			// Initial 0 byte to signify a floor request
-			buffer.write((byte) 0);
-			// For now, we will just send one floor request
-			buffer.write(floorRequests.get(0).getBytes());
-			byte[] request = buffer.toByteArray();
-			packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
-			System.out.println("Sending floor request");
-
-			sendReceiveSocket.send(packet);
+			
+			for (FloorRequest floorRequest : floorRequests) {
+				// Initial 0 byte to signify a floor request
+				buffer.write((byte) 0);
+				// For now, we will just send one floor request
+				buffer.write(floorRequests.get(0).getBytes());
+				byte[] request = buffer.toByteArray();
+				// Create datagram packet to send
+				packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
+				System.out.println("Sending floor request...");
+				sendReceiveSocket.send(packet);
+				// Reset the buffer for the next floor request
+				buffer.reset();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			System.out.println("Floor requests sent!");
 		}
 	}
 
