@@ -22,6 +22,9 @@ public class Scheduler implements Runnable{
 		this.elevatorMsgThread = new Thread(this, "elevatorThread");
 		this.elevators = new ArrayList<>();
 		this.requests = new ArrayList<>();
+		for (int i=0; i<50; i++) {
+		    requests.add(i, new FloorRequest());
+		}
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(69);
 			this.receiveFloorSocket = new DatagramSocket(45);
@@ -108,24 +111,22 @@ public class Scheduler implements Runnable{
 			}
 			
 			System.out.println("Floor message received");
-			//if (floorMsg[0]!=(byte)0) {
-				//removing first 0 byte from received packet
-				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
-				//adding new request to front of requests linked list
-				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
-				this.addRequest(r);
-				System.out.println(Arrays.toString(actualMsg));
-		//	}
-			//else {
-				//System.out.println(Arrays.toString(floorMsg));
-
-			//}
-		
+			
 			
 			//floor request
 			//proper code should extract floor number and other info
 			if((byte)floorMsg[0] == (byte)0)
 			{
+				
+				//removing first 0 byte from received packet
+				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
+				
+				//adding new request to front of requests linked list
+				//the following line is causing java.io.StreamCorruptedException: invalid stream header: 00ACED00 error: PLEASE HELP
+				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
+				SchedulerElevators elevator = this.elevators.get(0);
+				this.addRequest(elevator.currentFloor,r);
+				System.out.println(Arrays.toString(actualMsg));
 				
 				//call to isEmpty
 				//checks if any elevators available
@@ -191,12 +192,13 @@ public class Scheduler implements Runnable{
 			//receiving elevator approaching next floor message every 8 seconds fro floor
 			else if(floorMsg[0] == (byte)4)
 			{
-				SchedulerElevators elevator = new SchedulerElevators();
+				SchedulerElevators elevator = this.elevators.get(0);
 				System.out.println("Received elevator approaching floor from floor");
 				elevator.currentFloor = elevator.currentFloor+1;
 				
 				//check list for request at that floor
-				if(requests.get(elevator.currentFloor) != null) {
+				FloorRequest re  = new FloorRequest();
+				if(requests.get(elevator.currentFloor) != re) {
 					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 					buffer.write((byte) 1);
 					buffer.write((byte) requests.get(elevator.currentFloor).floor);
@@ -207,6 +209,7 @@ public class Scheduler implements Runnable{
 					request.write((byte) 0);
 					request.write((byte) requests.get(elevator.currentFloor).floor);
 					request.write((byte) requests.get(elevator.currentFloor).carButton);
+					//request.write((byte) requests.get(elevator.currentfloor).carButton);
 					
 					byte[] newRequest = request.toByteArray();
 					
@@ -229,17 +232,6 @@ public class Scheduler implements Runnable{
 						e.printStackTrace();
 					}
 				}
-//				else {
-//					//tell floor to count 8 secs again to start the counter for next floor
-//					byte [] next = new byte [] {3};
-//					try {
-//						DatagramSocket nextFloor = new DatagramSocket();
-//						DatagramPacket startCount = new DatagramPacket(next , next.length, InetAddress.getLocalHost(), packet.getPort());
-//						nextFloor.send(startCount);
-//					} catch (IOException e) {
-//						e.printStackTrace();
-//					}
-//				}
 				//process if you need to stop elevator at this floor its approaching
 			}
 		}
@@ -248,9 +240,9 @@ public class Scheduler implements Runnable{
 	{
 		return requests.isEmpty();
 	}
-	public synchronized void addRequest(FloorRequest r)
+	public synchronized void addRequest(int index, FloorRequest r)
 	{
-		requests.add(r);
+		requests.set(index,r);
 	}
 	
 	public void closeDoor() {
