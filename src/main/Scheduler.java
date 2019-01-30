@@ -108,17 +108,19 @@ public class Scheduler implements Runnable{
 			}
 			
 			System.out.println("Floor message received");
-			
-			//removing first 0 byte from received packet
-			byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
-			
-			//adding new request to front of requests linked list
-			//the following line is causing java.io.StreamCorruptedException: invalid stream header: 00ACED00 error: PLEASE HELP
-			FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
-			this.addRequest(r);
-			System.out.println(Arrays.toString(actualMsg));
-			
-			
+			//if (floorMsg[0]!=(byte)0) {
+				//removing first 0 byte from received packet
+				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
+				//adding new request to front of requests linked list
+				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
+				this.addRequest(r);
+				System.out.println(Arrays.toString(actualMsg));
+		//	}
+			//else {
+				//System.out.println(Arrays.toString(floorMsg));
+
+			//}
+		
 			
 			//floor request
 			//proper code should extract floor number and other info
@@ -227,6 +229,17 @@ public class Scheduler implements Runnable{
 						e.printStackTrace();
 					}
 				}
+//				else {
+//					//tell floor to count 8 secs again to start the counter for next floor
+//					byte [] next = new byte [] {3};
+//					try {
+//						DatagramSocket nextFloor = new DatagramSocket();
+//						DatagramPacket startCount = new DatagramPacket(next , next.length, InetAddress.getLocalHost(), packet.getPort());
+//						nextFloor.send(startCount);
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					}
+//				}
 				//process if you need to stop elevator at this floor its approaching
 			}
 		}

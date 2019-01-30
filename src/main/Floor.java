@@ -109,10 +109,10 @@ public class Floor implements Runnable {
 		//to check first byte of message msg[0]
 		//to decide what actions to take 
 		
-	
-		if (waitforMove[0] == (byte)3) {
-			notifyScheduler();
-		}
+//	
+//		if (waitforMove[0] == (byte)3) {
+//			notifyScheduler();
+//		}
 		
 		// wait till elevator almost reaching floor 2
 		//remove pause() after
@@ -128,11 +128,13 @@ public class Floor implements Runnable {
 		Thread.sleep(8000);
 		
 		try {
-			byte[] floortofloor = new byte [100];
-			floortofloor[0] = (byte)4;
-			DatagramSocket sendToScheduler = new DatagramSocket();
+			byte[] floortofloor = new byte[]{4};
+			System.out.println (Arrays.toString(floortofloor));
+			//DatagramSocket sendToScheduler = new DatagramSocket();
 			DatagramPacket packet = new DatagramPacket(floortofloor, floortofloor.length, InetAddress.getLocalHost(), 45 );
-			sendToScheduler.send(packet);
+			sendReceiveSocket.send(packet);
+			sendReceiveSocket.close();
+			
 		}	catch (IOException e) {
 				e.printStackTrace();
 		}
