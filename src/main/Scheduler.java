@@ -77,8 +77,7 @@ public class Scheduler implements Runnable{
 				elevator.destinationFloor = (int)elevatorMsg[2];
 				elevator.isStationary = ((int)elevatorMsg[3]);
 				elevator.portNumber = (int)elevatorMsg[4];
-				this.elevators.add(elevator);
-				
+				this.addElevator(elevator);
 			}
 			
 			//else if door closed  
@@ -161,8 +160,8 @@ public class Scheduler implements Runnable{
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 				buffer.write((byte) 0);
-				buffer.write((byte) requests.get(0).getFloor());
-				buffer.write((byte) requests.get(0).getCarButton());
+				buffer.write((byte) requests.get(0).floor);
+				buffer.write((byte) requests.get(0).carButton);
 				
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
@@ -198,14 +197,14 @@ public class Scheduler implements Runnable{
 				if(requests.get(elevator.currentFloor) != null) {
 					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 					buffer.write((byte) 1);
-					buffer.write((byte) requests.get(elevator.currentFloor).getFloor());
+					buffer.write((byte) requests.get(elevator.currentFloor).floor);
 					
 					byte[] stopData = buffer.toByteArray();
 					
 					ByteArrayOutputStream request = new ByteArrayOutputStream();
 					request.write((byte) 0);
-					request.write((byte) requests.get(elevator.currentFloor).getFloor());
-					request.write((byte) requests.get(elevator.currentFloor).getCarButton());
+					request.write((byte) requests.get(elevator.currentFloor).floor);
+					request.write((byte) requests.get(elevator.currentFloor).carButton);
 					
 					byte[] newRequest = request.toByteArray();
 					
@@ -262,8 +261,12 @@ public class Scheduler implements Runnable{
 		this.floorMsgThread.start();
 		this.elevatorMsgThread.start();
 	}
-				
-
+	
+	public synchronized void addElevator(SchedulerElevators elevator)
+	{
+		this.elevators.add(elevator);
+		notifyAll();
+	}
 	
 	@Override
 	public void run() {
