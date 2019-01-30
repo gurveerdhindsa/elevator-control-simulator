@@ -198,7 +198,7 @@ public class Scheduler implements Runnable{
 				
 				//check list for request at that floor
 				FloorRequest re  = new FloorRequest();
-				if(requests.get(elevator.currentFloor) != re) {
+				if(requests.get(elevator.currentFloor).timestamp != null) {
 					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 					buffer.write((byte) 1);
 					buffer.write((byte) requests.get(elevator.currentFloor).floor);
