@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 
 public class Elevator implements Runnable{
@@ -47,6 +48,10 @@ public class Elevator implements Runnable{
 	}
 	
 	
+	private synchronized int peekTail()
+	{
+		return this.pendingDestinations.peekLast();
+	}
 	private synchronized int peekPending()
 	{
 		return this.pendingDestinations.peekFirst();
@@ -64,17 +69,17 @@ public class Elevator implements Runnable{
 			return;
 		}
 		
-		int currHead = this.pendingDestinations.peekFirst();
-		int diff = destination - currHead;
-		if ((diff < 0 && direction == 1) ||
-				(diff > 0 && direction != 1))
+		//if direction is up
+		
+		//if direction is down
+		this.pendingDestinations.add(destination);
+		if(this.getDirection() == 1)
 		{
-			this.pendingDestinations.addFirst(destination);
+			Collections.sort(this.pendingDestinations);
 		}
-		else if((diff > 0 && direction == 1) ||
-				(diff < 0 && direction !=1))
+		else
 		{
-			this.pendingDestinations.add(1, destination);
+			Collections.sort(this.pendingDestinations, Collections.reverseOrder());
 		}
 		
 	}
@@ -108,25 +113,6 @@ public class Elevator implements Runnable{
 		//maybe create a schedulerElevator instance 
 		//fill in the required of port number convert it to bytes
 		//or looks like just port number might be enough for registration
-				
-		byte[] registerElev = new byte[] {0,0,0,0,0};
-		byte port = (byte) this.portNumber;
-		registerElev[4] = port;
-		
-		try {
-			System.out.println("Sending register elevator");
-			//later on need elevator to know host of and port of scheduler when being instantiated
-			DatagramPacket pck = new DatagramPacket(registerElev, registerElev.length, 
-					InetAddress.getLocalHost(),69);
-			DatagramSocket soc = new DatagramSocket();
-			soc.send(pck);
-			soc.close();
-			System.out.println("Sent register elevator");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
 		while(true)
 		{
 			
@@ -144,12 +130,7 @@ public class Elevator implements Runnable{
 	            System.out.println("Receive Socket Timed Out.\n" + e);
 	            e.printStackTrace();
 	        }
-			
-			if(Thread.currentThread().isInterrupted())
-			{
-				motorExit(0);
-				return;
-			}
+
 			
 	        System.out.println("got request"); 
 			byte[] msg = receiveClientPacket.getData();
@@ -216,6 +197,24 @@ public class Elevator implements Runnable{
 	}
 	public void start()
 	{
+		byte[] registerElev = new byte[] {0,0,0,0,0};
+		byte port = (byte) this.portNumber;
+		registerElev[4] = port;
+		
+		try {
+			System.out.println("Sending register elevator");
+			//later on need elevator to know host of and port of scheduler when being instantiated
+			DatagramPacket pck = new DatagramPacket(registerElev, registerElev.length, 
+					InetAddress.getLocalHost(),69);
+			DatagramSocket soc = new DatagramSocket();
+			soc.send(pck);
+			soc.close();
+			System.out.println("Sent register elevator");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		this.messageThread.start();
 		System.out.printf("Main thread: %s done its job\n",Thread.currentThread().getName());
 	}
@@ -257,6 +256,7 @@ public class Elevator implements Runnable{
 			 */
 			currentfloor = destinationfloor;
 			int pendingR = this.anyPendingDest();
+			System.out.println("pendingR" + pendingR);
 			int destination = 0;
 			if(pendingR == 1)
 			{
