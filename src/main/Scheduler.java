@@ -232,7 +232,29 @@ public class Scheduler implements Runnable{
 						e.printStackTrace();
 					}
 				}
-				//process if you need to stop elevator at this floor its approaching
+				else {
+					System.out.println("No requests found on next floor. Elevator can keep moving.");
+					byte[] floorData = new  byte[] {3};
+					DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,
+							packet.getAddress(),packet.getPort());
+					try {
+						DatagramSocket noInterrupt = new DatagramSocket();
+						noInterrupt.send(floorPckt);
+						noInterrupt.close();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					try {
+						Thread.sleep(1);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+					
+				}
+				
 			}
 		}
 	}
