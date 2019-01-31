@@ -97,14 +97,13 @@ public class Floor implements Runnable {
 		// time in between requests
 		DatagramPacket packet;
 		try {
-			System.out.println(floorRequests.size());
 			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 			
 			for (FloorRequest floorRequest : floorRequests) {
 				// Initial 0 byte to signify a floor request
 				buffer.write((byte) 0);
 				// For now, we will just send one floor request
-				buffer.write(floorRequests.get(0).getBytes());
+				buffer.write(floorRequest.getBytes());
 				byte[] request = buffer.toByteArray();
 				// Create datagram packet to send
 				packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
@@ -130,16 +129,15 @@ public class Floor implements Runnable {
 		DatagramPacket movement = new DatagramPacket(waitforMove, waitforMove.length);
 		try {
 			sendReceiveSocket.receive(movement);
-			System.out.println("Receive that elevator is moving to floor");
+			System.out.println("Received message: elevator is moving up a floor");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		if (waitforMove[0] == (byte)3) { // byte 3 is received from scheduler
-			notifyScheduler(); // sleep for 8000 milli seconds and then call stopElevator
-		}
+		// Byte 3 signifies elevator has moved up a floor
+		if (waitforMove[0] == (byte)3)
+			notifyScheduler();
 		
-		//pause(); // or sleep to be consistent whilst getting rid of function overhead
-		        
+		//pause(); // Or sleep to be consistent whilst getting rid of function overhead
 	}
 	
 	/**
@@ -188,6 +186,7 @@ public class Floor implements Runnable {
 //			runTime = Time1 - Time0;
 //		}
 //	}
+	
 	/**
 	 * Starts both floor send/receive threads, calling the run method
 	 * @param
@@ -198,6 +197,7 @@ public class Floor implements Runnable {
 		this.sendThread.start();
 		this.sendReceiveThread.start();
 	}
+	
 	/**
 	 * Executes the both send and receive threads
 	 * @param
@@ -217,8 +217,6 @@ public class Floor implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		
-		
 	}
 
 	/**

@@ -4,6 +4,7 @@ package main;
 
 import java.io.*;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 
 /**
  * The Class FloorRequest used to instantiate a request to move the elevator
@@ -24,7 +25,7 @@ public class FloorRequest implements Serializable {
 		this.carButton = carButton;
 		this.floorButton = floorButton;
 
-		System.out.println("Creating a floor request with:\n\t" + "Timestamp: " + timestamp + "\n\tFloor: " + floor + "\n\tCar Button: " + carButton + "\n\tFloor Button: " + floorButton);
+		System.out.println("Creating a floor request with:\n\t" + "Timestamp: " + new SimpleDateFormat("hh:mm:ss.SSS").format(timestamp) + "\n\tFloor: " + floor + "\n\tCar Button: " + carButton + "\n\tFloor Button: " + floorButton);
 	}
 
 	/**
