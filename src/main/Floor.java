@@ -8,6 +8,15 @@ import java.text.*;
 import java.util.*;
 import java.sql.Timestamp;
 
+
+/**
+ * Floor sends a floor request to the scheduler
+ * Floor receives when the elevator is moving
+ * Every 8 secs it sends a packet to the Scheduler
+ * letting it know it is moving to the next floor up/down
+ *
+ */
+
 public class Floor implements Runnable {
 
 	private Thread sendThread,
@@ -16,8 +25,10 @@ public class Floor implements Runnable {
 
 	private List<FloorRequest> floorRequests;	// List of requests to be made
 
-	
-	
+	/**
+	 * Creates 2 threads, one to receive and one to send packets to/from scheduler
+	 * 
+	 */
 	public Floor() {
 		sendThread = new Thread(this, "sendThread");
 		sendReceiveThread = new Thread(this, "sendReceiveThread");
@@ -32,7 +43,12 @@ public class Floor implements Runnable {
 			e.printStackTrace();
 		}
 	}
-
+	/**
+	 * Reads the input file configuration.txt, reads in the time stamp , floor, floor button and car button
+	 * Creates an arrayList of floor request from the file and adds to the list
+	 * @param
+	 * @return 
+	 */
 	public void importConfiguration() {
 		try (BufferedReader br = new BufferedReader(new FileReader("src/configuration/configuration.txt"))) {
 			String input = null;
@@ -69,6 +85,13 @@ public class Floor implements Runnable {
 		}
 	}
 
+	/**
+	 * Sends the floor request to the scheduler on port 45, the first byte being a 0,
+	 * meaning it is a floor request. Each request will result in a packet being sent 
+	 * to scheduler
+	 * @param
+	 * @return 
+	 */
 	public void send() {
 		//edit to send all requests with random 
 		// time in between requests
@@ -97,6 +120,11 @@ public class Floor implements Runnable {
 		}
 	}
 
+	/**
+	 * Receives a packet from the scheduler meaning the elevator is ready to move
+	 * @param
+	 * @return 
+	 */
 	public void receiveElevatorMovement() throws InterruptedException, UnknownHostException {
 		byte[] waitforMove = new byte[100];
 		DatagramPacket movement = new DatagramPacket(waitforMove, waitforMove.length);
@@ -106,74 +134,75 @@ public class Floor implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		if (waitforMove[0] == (byte)3) { // byte 3 is received from scheduler
+			notifyScheduler(); // sleep for 8000 milli seconds and then call stopElevator
+		}
 		
-		//for now assumption is only message sent from
-		//scheduler to floor is elevator on the move 
-		//might need more later so might need 
-		//to check first byte of message msg[0]
-		//to decide what actions to take 
-
-//		if (waitforMove[0] == (byte)3) {
-//			notifyScheduler();
-//		}
-		
-		// wait till elevator almost reaching floor 2
-		//remove pause() after
-		pause(); // or sleep to be consistent whilst getting rid of function overhead
-		         // sleep for 8000 milli seconds and then call stopElevator
-		
-		
+		//pause(); // or sleep to be consistent whilst getting rid of function overhead
+		        
 	}
-
+	
+	/**
+	 * After the thread sleeps for 8 seconds, sends packet to scheduler it is approaching
+	 * the next floor on port 45
+	 * @param
+	 * @return 
+	 */
 	private void notifyScheduler() throws InterruptedException, UnknownHostException {
-		
-
 		Thread.sleep(8000);
-		
 		try {
 			byte[] floortofloor = new byte[]{4};
-			System.out.println (Arrays.toString(floortofloor));
-			//DatagramSocket sendToScheduler = new DatagramSocket();
 			DatagramPacket packet = new DatagramPacket(floortofloor, floortofloor.length, InetAddress.getLocalHost(), 45 );
 			sendReceiveSocket.send(packet);
 			sendReceiveSocket.close();
-			
 		}	catch (IOException e) {
 				e.printStackTrace();
 		}
 	}
 		
 			
-		
+//	/**
+//	 * 
+//	 * 
+//	 * @param
+//	 * @return 
+//	 */
+//	public void stopElevator() {
+//		byte[] stopelevator = new byte[] { 3 };
+//
+//		try {
+//			DatagramPacket stop = new DatagramPacket(stopelevator, stopelevator.length, InetAddress.getLocalHost(), 45);
+//			System.out.println("Stopping elevator");
+//			this.sendReceiveSocket.send(stop);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//	}
 
-	public void stopElevator() {
-		byte[] stopelevator = new byte[] { 3 };
-
-		try {
-			DatagramPacket stop = new DatagramPacket(stopelevator, stopelevator.length, InetAddress.getLocalHost(), 45);
-			System.out.println("Stopping elevator");
-			this.sendReceiveSocket.send(stop);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	static void pause() {
-		long Time0 = System.currentTimeMillis();
-		long Time1;
-		long runTime = 0;
-		while (runTime < 9000) {
-			Time1 = System.currentTimeMillis();
-			runTime = Time1 - Time0;
-		}
-	}
-	
+//	static void pause() {
+//		long Time0 = System.currentTimeMillis();
+//		long Time1;
+//		long runTime = 0;
+//		while (runTime < 9000) {
+//			Time1 = System.currentTimeMillis();
+//			runTime = Time1 - Time0;
+//		}
+//	}
+	/**
+	 * Starts both floor send/receive threads, calling the run method
+	 * @param
+	 * @return 
+	 */
 	public void start()
 	{
 		this.sendThread.start();
 		this.sendReceiveThread.start();
 	}
-	
+	/**
+	 * Executes the both send and receive threads
+	 * @param
+	 * @return 
+	 */
 	@Override
 	public void run() {
 		if(Thread.currentThread().getName().equals("sendThread"))
@@ -194,7 +223,7 @@ public class Floor implements Runnable {
 
 	/**
 	 * Main method
-	 * 
+	 * Creates instance of floor method and runs the 
 	 * @param args
 	 */
 	public static void main(String[] args) {
