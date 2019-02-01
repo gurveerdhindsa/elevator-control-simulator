@@ -30,6 +30,10 @@ Set up and running:
 2. In Eclipse IDE, import the project (as an existing project) into your current workspace
 3. Right click on each Java file (Scheduler.java, Elevator.java, Floor.java) in this order.
 (It is recommended to open a new console for each running program)
+
+Responsibility breakdown:
+Each group member was equally responsible for the coding part of this iteration.
+Also, each group member contributed to creating the UML class diagram and state machine diagram
 	
 
 
