@@ -33,7 +33,6 @@ public class Elevator implements Runnable{
 		this.portNumber = portNumber;
 		this.currentfloor = 0;
 		this.destinationfloor = 0;
-		this.motorThread = new Thread(this, "motorThread");
 		this.messageThread = new Thread(this, "messageThread");
 		this.pendingDestinations = new LinkedList<>();
 		this.doorsOpen = true;
@@ -47,11 +46,6 @@ public class Elevator implements Runnable{
 		}
 	}
 	
-	
-	private synchronized int peekTail()
-	{
-		return this.pendingDestinations.peekLast();
-	}
 	private synchronized int peekPending()
 	{
 		return this.pendingDestinations.peekFirst();
@@ -106,7 +100,6 @@ public class Elevator implements Runnable{
 	
 	public void forever()
 	{
-		System.out.println(this.motorThread.getName());
 		System.out.println(Thread.currentThread().getName());
 		
 		//don't know how we want to this yet
@@ -146,15 +139,22 @@ public class Elevator implements Runnable{
 				//update destination floor field before starting move thread
 				//can do fancy console printing if like
 				
-				//Message received format: [0 - DestinationFloor]
+				//Message received format: [0 - floor - carButton]
 				System.out.println("Got request with contents");
 				System.out.println(Arrays.toString(msg));
-				destinationfloor = msg[1];
-				direction = (this.destinationfloor - this.currentfloor)/
-						Math.abs(this.destinationfloor - this.currentfloor);
-				addPendingDest((int)msg[2]);
-				 
-				stationary = false;
+				
+				if(this.getCurrentFloor() == msg[1])
+				{
+					this.setDestFloor(msg[2]);
+				}
+				else 
+				{
+					this.setDestFloor(msg[1]);
+					addPendingDest((int)msg[2]);
+				}
+				this.setDirection(); 
+				this.stationary = false;
+				this.motorThread = new Thread(this, "motorThread");
 				this.motorThread.start();
 				//send packet to scheduler that elevator moving(later iteration?)
 				
@@ -176,7 +176,7 @@ public class Elevator implements Runnable{
 			//else if msg[0] == 2 is door close. so close door
 			//send back door closed to the scheduler 
 			//door close message received
-			else if(msg[0]==(byte)2 && msg.length==1) {
+			else if(msg[0]==(byte)2) {
 				
 				System.out.println("Closing doors. ");
 				this.doorsOpen = false;
@@ -200,6 +200,7 @@ public class Elevator implements Runnable{
 		byte[] registerElev = new byte[] {0,0,0,0,0};
 		byte port = (byte) this.portNumber;
 		registerElev[4] = port;
+		registerElev[3] = 1;
 		
 		try {
 			System.out.println("Sending register elevator");
@@ -241,7 +242,7 @@ public class Elevator implements Runnable{
 	private Boolean mimicMovement()
 	{
 		//here function should calculate the number of floors it needs to move 
-		int floorDiff = Math.abs(currentfloor - destinationfloor);
+		int floorDiff = Math.abs(this.getCurrentFloor() - this.getDestFloor());
 		//multiply the avg 10000milliseconds to 1 floor by the number of floors 
 		try {
 			System.out.println("Elevator moving");
@@ -251,22 +252,15 @@ public class Elevator implements Runnable{
 			//so we update current floor as that floor
 			//send packet to scheduler elevator has arrived
 			
-			/**
-			 * @TODO make access to direction, stationary, currfloor, destfloor synchronized
-			 */
-			currentfloor = destinationfloor;
+			this.setCurrentFloor(this.getDestFloor());;
 			int pendingR = this.anyPendingDest();
-			System.out.println("pendingR" + pendingR);
-			int destination = 0;
-			if(pendingR == 1)
-			{
-				destination = this.peekPending();
-			}
+			System.out.println("pendingR " + pendingR);
+			int destination = pendingR == 1 ? this.peekPending() : -1;
 			byte[] arrivalMessage = new byte[4];   //byte 4 is used to represent arrival to destination
-			arrivalMessage[0] = 4;
+			arrivalMessage[0] = 5;
 			arrivalMessage[1] = (byte)pendingR;
 			arrivalMessage[2] = (byte)destination;
-			arrivalMessage[3] = (byte)currentfloor;
+			arrivalMessage[3] = (byte)this.getCurrentFloor();
 			
 			DatagramPacket arrivalMsgPkt = new DatagramPacket(arrivalMessage, arrivalMessage.length, InetAddress.getLocalHost(),69);
 			DatagramSocket arrivalMsgSocket = new DatagramSocket();
@@ -296,10 +290,8 @@ public class Elevator implements Runnable{
 	{
 		while(mimicMovement())
 		{
-			this.destinationfloor = this.getPendingDest();
-			//make direction synchronized inside a function
-			this.direction = (this.destinationfloor - this.currentfloor)/
-					Math.abs(this.destinationfloor - this.currentfloor);
+			this.setDestFloor(this.getPendingDest());
+			this.setDirection();
 		}
 	}
 	
@@ -341,8 +333,8 @@ public class Elevator implements Runnable{
 	
 	public static void main(String[] args)
 	{
-		Elevator e = new Elevator(23);
-		e.run();
+		Elevator e = new Elevator(70);
+		e.start();
 	}
 	
 	/*

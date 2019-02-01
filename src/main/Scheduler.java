@@ -93,36 +93,43 @@ public class Scheduler implements Runnable{
 			//else if destination arrival message
 			else if((byte)elevatorMsg[0] == (byte)5) {
 				System.out.println("Received destination arrival message.");
-				
+				System.out.println(elevatorMsg[1]);
 				if(elevatorMsg[1]==0) {       //elevator is stopped, currently waiting for next request
 					System.out.println("Sending next request to elevator.");
-					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-					buffer.write((byte) 0);
-					buffer.write((byte) requests.get(0).floor);
-					buffer.write((byte) requests.get(0).carButton);
-					
-					byte[] data = buffer.toByteArray();
-					System.out.println("Sent following to elevator: " + Arrays.toString(data));
-					
-					try {
-						DatagramSocket sendElevatorMove = new DatagramSocket();
-						SchedulerElevators selectedElevator = this.elevators.get(0);
-						DatagramPacket elevatorPckt = 
-								new DatagramPacket(data,data.length,
-										InetAddress.getLocalHost(),selectedElevator.portNumber);
-						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
-						if(selectedElevator.isStationary == 1) {    //if elevator is stationary
-							sendElevatorMove.send(elevatorPckt);
+					if(requests.get(0).timestamp != null)
+					{
+						ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+						buffer.write((byte) 0);
+						FloorRequest request = requests.remove(0);
+						buffer.write((byte) request.floor);
+						buffer.write((byte) request.carButton);
+						
+						byte[] data = buffer.toByteArray();
+						System.out.println("Sent following to elevator: " + Arrays.toString(data));
+						
+						try {
+							DatagramSocket sendElevatorMove = new DatagramSocket();
+							SchedulerElevators selectedElevator = this.elevators.get(0);
+							DatagramPacket elevatorPckt = 
+									new DatagramPacket(data,data.length,
+											InetAddress.getLocalHost(),selectedElevator.portNumber);
+							//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
+							if(selectedElevator.isStationary == 1) {    //if elevator is stationary
+								sendElevatorMove.send(elevatorPckt);
+							}
+							//sendElevatorMove.send(floorPckt);
+							System.out.println("Sent movement");
+							sendElevatorMove.close();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
-						//sendElevatorMove.send(floorPckt);
-						System.out.println("Sent movement");
-						sendElevatorMove.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
 					}
+					
+					
+					
 				}
-				else if(elevatorMsg[1]==1) {
+				else if(elevatorMsg[1]== 1) {
 					System.out.println("Elevator already has a pending request. Not sending any more requests yet.");
 				}
 			}
@@ -158,6 +165,7 @@ public class Scheduler implements Runnable{
 				//removing first 0 byte from received packet
 				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
 				
+				isEmpty();
 				//adding new request to front of requests linked list
 				//the following line is causing java.io.StreamCorruptedException: invalid stream header: 00ACED00 error: PLEASE HELP
 				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
@@ -170,7 +178,7 @@ public class Scheduler implements Runnable{
 				//if none blocks the listen to messages
 				//from floor thread till an elevator is 
 				//registered
-				isEmpty();
+				
 
 				//[Should have two arraylists for up and down requests for now]
 				//single elevator for now so definitely selecting 
@@ -200,8 +208,9 @@ public class Scheduler implements Runnable{
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 				buffer.write((byte) 0);
-				buffer.write((byte) requests.get(0).floor);
-				buffer.write((byte) requests.get(0).carButton);
+				FloorRequest request = requests.remove(0);
+				buffer.write((byte) request.floor);
+				buffer.write((byte) request.carButton);
 				
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
@@ -211,6 +220,7 @@ public class Scheduler implements Runnable{
 				try {
 					DatagramSocket sendElevatorMove = new DatagramSocket();
 					SchedulerElevators selectedElevator = this.elevators.get(0);
+					System.out.println(selectedElevator.portNumber);
 					DatagramPacket elevatorPckt = 
 							new DatagramPacket(data,data.length,
 									InetAddress.getLocalHost(),selectedElevator.portNumber);

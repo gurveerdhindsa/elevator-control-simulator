@@ -19,7 +19,11 @@ import main.Elevator;
 
 public class ElevatorTest {
 	
-	
+	/**
+	 * Tests that an Elevator instance when started,
+	 * sends its information such as port number to the 
+	 * Scheduler on port 69 
+	 */
 	@Test 
 	public void testRegistration()
 	{
@@ -38,7 +42,10 @@ public class ElevatorTest {
 		try {
 			DatagramPacket registration = new DatagramPacket(regist,regist.length);
 			DatagramSocket getRegist = new DatagramSocket(69);
+			
+			//start an elevator with all its child threads 
 			elevThread.start();
+			//mimic the listening for that information on the scheduler side
 			getRegist.receive(registration);
 			getRegist.close();
 		} catch (IOException e) {
@@ -46,15 +53,28 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 		
+		//verify that the message being sent 
+		//contains the correct message identifier - 0 
+		//and the correct number - 33
 		assertTrue((int)regist[0] == 0);
 		assertTrue((int)regist[4] == 33);
 		
 	}
 	
-	
+	/**
+	 * Tests the functionality of an elevator 
+	 * recieving a request with floor number 
+	 * and car button number and validating that
+	 * an elevator moves from its current floor 
+	 * to the request floor and then the car button
+	 * floor
+	 */
 	@Test
 	public void testReceiveRequest()
 	{
+		//In order that Junit Thread 
+		//can operate simulatenously with the Threads 
+		// of the System under test. 
 		Thread elevThread = new Thread(new Runnable()
 				{
 			@Override
@@ -66,6 +86,11 @@ public class ElevatorTest {
 				});
 		
 		elevThread.start();
+		
+		//mimicking the scheduler sending a message with 
+		// Msg Id = 0 - signifies a floor request
+		// floorNumber = 2 - signifies which floor the request is coming from
+		// CarButton = 5 - signifies which floor the passenger wants to gets off
 		byte[] request = new byte[] {0, 2, 5, 0};
 		try {
 			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
@@ -79,6 +104,9 @@ public class ElevatorTest {
 			e.printStackTrace();
 		} 
 		
+		//mimic a scheduler waiting to receive an elevator has 
+		//arrived at some destination and whether its stopped 
+		//completely or continuing on to a pending destination
 		byte[] arrival = new byte[50];
 		try {
 			Thread.sleep(19500);
@@ -87,41 +115,37 @@ public class ElevatorTest {
 			
 			DatagramPacket pck = new DatagramPacket(arrival,arrival.length);
 			getArrival.receive(pck);
-			getArrival.close();
-			
-			
+			getArrival.close();	
 		} catch (InterruptedException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		assertTrue((int)arrival[0] == 4);
-		assertTrue((int)arrival[1] == 1);
-		assertTrue((int)arrival[2] == 5);
-		assertTrue((int)arrival[3] == 2);
+		//validations
+		assertTrue((int)arrival[0] == 5); //correct Msg Id for Elevator arrival
+		assertTrue((int)arrival[1] == 1); //Does this elevator have a pending 
+		                                  //destination after arriving at current floor
+		assertTrue((int)arrival[2] == 5); //floor number that is elevator is currently moving to
+		assertTrue((int)arrival[3] == 2); // current floor of this elevator
 		
 	}
 	
-	/*@Test
+	/**
+	 * 
+	 */
+	@Test
 	public void testSendDoorCloseMsg()
 	{
-		Thread elevThread = new Thread(new Runnable()
-		{
-		@Override
-		public void run()
-		{
-			Elevator elev = new Elevator(23);
-			elev.run();
-		}
-			});
+		Thread elevThread = new Thread(new Elevator(10));
 	
 		elevThread.start();
+		
 		byte[] doorCloseMsg = new byte[] {2};
 		try {
 			DatagramPacket doorClosePckt = new DatagramPacket(doorCloseMsg,doorCloseMsg.length,
-					InetAddress.getLocalHost(),23);
+					InetAddress.getLocalHost(),10);
 			DatagramSocket doorCloseSocket = new DatagramSocket();
-			doorCloseSocket.receive(doorClosePckt);
+			doorCloseSocket.send(doorClosePckt);
 			doorCloseSocket.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -129,8 +153,21 @@ public class ElevatorTest {
 			e.printStackTrace();
 		} 
 		
-		assertTrue((byte)doorCloseMsg[0] == 2);
-
-		}*/
+		byte[] doorClosedMsg = new byte[1];	
+		try {
+			DatagramPacket doorClosed = new DatagramPacket(doorClosedMsg, doorClosedMsg.length);
+			DatagramSocket doorClosedSocket = new DatagramSocket(69);
+			doorClosedSocket.receive(doorClosed);
+			doorClosedSocket.close();
+			assertTrue(doorClosed.getData().length == 1);
+		}
+		catch(IOException e)
+		{
+			fail("Did not Receive");
+			e.printStackTrace();
+		}	
+		//elevThread.interrupt();
+		assertTrue(doorClosedMsg[0] == 2);
+		}
 
 }
