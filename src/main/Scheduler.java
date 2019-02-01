@@ -132,6 +132,12 @@ public class Scheduler implements Runnable{
 				else if(elevatorMsg[1]== 1) {
 					System.out.println("Elevator already has a pending request. Not sending any more requests yet.");
 				}
+				else if((byte)elevatorMsg[0] == (byte)6)
+				{
+					//register elevator 
+					SchedulerElevators elevator = new SchedulerElevators();
+					elevator.isStationary = ((int)elevatorMsg[1]);
+				}
 			}
 				
 		}
@@ -167,74 +173,84 @@ public class Scheduler implements Runnable{
 				
 				isEmpty();
 				//adding new request to front of requests linked list
-				//the following line is causing java.io.StreamCorruptedException: invalid stream header: 00ACED00 error: PLEASE HELP
 				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
 				SchedulerElevators elevator = this.elevators.get(0);
-				this.addRequest(elevator.currentFloor,r);
-				System.out.println(Arrays.toString(actualMsg));
-				
-				//call to isEmpty
-				//checks if any elevators available
-				//if none blocks the listen to messages
-				//from floor thread till an elevator is 
-				//registered
-				
+				if(elevator.isStationary == 1) {
+					
+					this.addRequest(elevator.currentFloor,r);
+					//requests.add(r);
+					System.out.println(Arrays.toString(actualMsg));
+					
+					
+					//call to isEmpty
+					//checks if any elevators available
+					//if none blocks the listen to messages
+					//from floor thread till an elevator is 
+					//registered
+					
 
-				//[Should have two arraylists for up and down requests for now]
-				//single elevator for now so definitely selecting 
-				//elevator at index 0, if elevator is moving 
-				//check elevators current floor & direction, if 
-				//same direction as request and difference between
-				// currentFloor and requestFloor > 1 
-				//else if stationary start new thread and name it 
-				//closeDoor(easy because of single elevator, otherwise
-				//don't know which elevator door to close)
-				
-				//(probably create a processing thread that should handle 
-				//this. Basically have a linkedlist for now since 		
-				//doing FIFO. if when processing thread is started 
-				//linked list empty, it should get stuck on wait.
-				//once this thread puts into the linked list
-				//it should notifyall. [Another two new sync methods 
-				// isRequestEmpty and addRequest that adds to linked
-				//list or checks if empty]. if there are requests 
-				//to handle get our single elevator.....
-				//my brain got lost here so need help with this one 
-				//as listenFloorMsg can't have too much processing 
-				//otherwise would miss the floor arrival notification from
-				//floor)
-				System.out.println("Sending move command to elevator."); // and notifying floor");
-				
-				//creating buffer to store data to send to elevator
-				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-				buffer.write((byte) 0);
-				FloorRequest request = requests.remove(0);
-				buffer.write((byte) request.floor);
-				buffer.write((byte) request.carButton);
-				
-				byte[] data = buffer.toByteArray();
-				System.out.println("Sent following to elevator: " + Arrays.toString(data));
-				
-				//byte[] floorData = new  byte[] {3};
-				
-				try {
-					DatagramSocket sendElevatorMove = new DatagramSocket();
-					SchedulerElevators selectedElevator = this.elevators.get(0);
-					System.out.println(selectedElevator.portNumber);
-					DatagramPacket elevatorPckt = 
-							new DatagramPacket(data,data.length,
-									InetAddress.getLocalHost(),selectedElevator.portNumber);
-					//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
-					if(selectedElevator.isStationary == 1) {    //if elevator is stationary
-						sendElevatorMove.send(elevatorPckt);
+					//[Should have two arraylists for up and down requests for now]
+					//single elevator for now so definitely selecting 
+					//elevator at index 0, if elevator is moving 
+					//check elevators current floor & direction, if 
+					//same direction as request and difference between
+					// currentFloor and requestFloor > 1 
+					//else if stationary start new thread and name it 
+					//closeDoor(easy because of single elevator, otherwise
+					//don't know which elevator door to close)
+					
+					//(probably create a processing thread that should handle 
+					//this. Basically have a linkedlist for now since 		
+					//doing FIFO. if when processing thread is started 
+					//linked list empty, it should get stuck on wait.
+					//once this thread puts into the linked list
+					//it should notifyall. [Another two new sync methods 
+					// isRequestEmpty and addRequest that adds to linked
+					//list or checks if empty]. if there are requests 
+					//to handle get our single elevator.....
+					//my brain got lost here so need help with this one 
+					//as listenFloorMsg can't have too much processing 
+					//otherwise would miss the floor arrival notification from
+					//floor)
+					System.out.println("Elevator stationary. Sending move command to elevator."); // and notifying floor");
+					
+					//creating buffer to store data to send to elevator
+					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+					buffer.write((byte) 0);
+					FloorRequest request = requests.remove(0);
+					buffer.write((byte) request.floor);
+					buffer.write((byte) request.carButton);
+					
+					byte[] data = buffer.toByteArray();
+					System.out.println("Sent following to elevator: " + Arrays.toString(data));
+					
+					//byte[] floorData = new  byte[] {3};
+					
+					try {
+						DatagramSocket sendElevatorMove = new DatagramSocket();
+						SchedulerElevators selectedElevator = this.elevators.get(0);
+						System.out.println(selectedElevator.portNumber);
+						DatagramPacket elevatorPckt = 
+								new DatagramPacket(data,data.length,
+										InetAddress.getLocalHost(),selectedElevator.portNumber);
+						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
+						if(selectedElevator.isStationary == 1) {    //if elevator is stationary
+							sendElevatorMove.send(elevatorPckt);
+						}
+						//sendElevatorMove.send(floorPckt);
+						System.out.println("Sent movement");
+						sendElevatorMove.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
-					//sendElevatorMove.send(floorPckt);
-					System.out.println("Sent movement");
-					sendElevatorMove.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
+				else {
+					//this.addRequest(elevator.currentFloor,r);
+					requests.add(r);
+					System.out.println("Elevator still moving. Added request to list.");
+				}
+				
 				
 			}
 			/*

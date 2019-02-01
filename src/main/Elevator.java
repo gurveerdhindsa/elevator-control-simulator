@@ -154,8 +154,27 @@ public class Elevator implements Runnable{
 				}
 				this.setDirection(); 
 				this.stationary = false;
+				
+				byte[] elevMoving = new byte[] {6,1};
+				
+				try {
+					System.out.println("Sending register elevator");
+					//later on need elevator to know host of and port of scheduler when being instantiated
+					DatagramPacket pck = new DatagramPacket(elevMoving, elevMoving.length, 
+							InetAddress.getLocalHost(),69);
+					DatagramSocket soc = new DatagramSocket();
+					soc.send(pck);
+					soc.close();
+					System.out.println("Sent register elevator");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
 				this.motorThread = new Thread(this, "motorThread");
 				this.motorThread.start();
+				
+				
 				//send packet to scheduler that elevator moving(later iteration?)
 				
 			}
@@ -200,7 +219,12 @@ public class Elevator implements Runnable{
 		byte[] registerElev = new byte[] {0,0,0,0,0};
 		byte port = (byte) this.portNumber;
 		registerElev[4] = port;
-		registerElev[3] = 1;
+		if(stationary == true) {
+			registerElev[3] = 1;
+		}
+		else {
+			registerElev[3] = 0;
+		}
 		
 		try {
 			System.out.println("Sending register elevator");
