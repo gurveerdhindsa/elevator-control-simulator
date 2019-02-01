@@ -89,6 +89,43 @@ public class Scheduler implements Runnable{
 				//listen for floor message for new floorRequest 
 				//to interrupt elevator if needed 
 			}
+			
+			//else if destination arrival message
+			else if((byte)elevatorMsg[0] == (byte)5) {
+				System.out.println("Received destination arrival message.");
+				
+				if(elevatorMsg[1]==0) {       //elevator is stopped, currently waiting for next request
+					System.out.println("Sending next request to elevator.");
+					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+					buffer.write((byte) 0);
+					buffer.write((byte) requests.get(0).floor);
+					buffer.write((byte) requests.get(0).carButton);
+					
+					byte[] data = buffer.toByteArray();
+					System.out.println("Sent following to elevator: " + Arrays.toString(data));
+					
+					try {
+						DatagramSocket sendElevatorMove = new DatagramSocket();
+						SchedulerElevators selectedElevator = this.elevators.get(0);
+						DatagramPacket elevatorPckt = 
+								new DatagramPacket(data,data.length,
+										InetAddress.getLocalHost(),selectedElevator.portNumber);
+						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
+						if(selectedElevator.isStationary == 1) {    //if elevator is stationary
+							sendElevatorMove.send(elevatorPckt);
+						}
+						//sendElevatorMove.send(floorPckt);
+						System.out.println("Sent movement");
+						sendElevatorMove.close();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				else if(elevatorMsg[1]==1) {
+					System.out.println("Elevator already has a pending request. Not sending any more requests yet.");
+				}
+			}
 				
 		}
 	}
@@ -158,7 +195,7 @@ public class Scheduler implements Runnable{
 				//as listenFloorMsg can't have too much processing 
 				//otherwise would miss the floor arrival notification from
 				//floor)
-				System.out.println("Sending move command to elevator and notifying floor");
+				System.out.println("Sending move command to elevator."); // and notifying floor");
 				
 				//creating buffer to store data to send to elevator
 				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -169,7 +206,7 @@ public class Scheduler implements Runnable{
 				byte[] data = buffer.toByteArray();
 				System.out.println("Sent following to elevator: " + Arrays.toString(data));
 				
-				byte[] floorData = new  byte[] {3};
+				//byte[] floorData = new  byte[] {3};
 				
 				try {
 					DatagramSocket sendElevatorMove = new DatagramSocket();
@@ -177,10 +214,11 @@ public class Scheduler implements Runnable{
 					DatagramPacket elevatorPckt = 
 							new DatagramPacket(data,data.length,
 									InetAddress.getLocalHost(),selectedElevator.portNumber);
-					DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,
-							packet.getAddress(),packet.getPort());
-					sendElevatorMove.send(elevatorPckt);
-					sendElevatorMove.send(floorPckt);
+					//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
+					if(selectedElevator.isStationary == 1) {    //if elevator is stationary
+						sendElevatorMove.send(elevatorPckt);
+					}
+					//sendElevatorMove.send(floorPckt);
 					System.out.println("Sent movement");
 					sendElevatorMove.close();
 				} catch (IOException e) {
@@ -189,7 +227,8 @@ public class Scheduler implements Runnable{
 				}
 				
 			}
-			//receiving elevator approaching next floor message every 8 seconds fro floor
+			/*
+			//receiving elevator approaching next floor message every 8 seconds from floor
 			else if(floorMsg[0] == (byte)4)
 			{
 				SchedulerElevators elevator = this.elevators.get(0);
@@ -232,6 +271,7 @@ public class Scheduler implements Runnable{
 						e.printStackTrace();
 					}
 				}
+				
 				else {
 					System.out.println("No requests found on next floor. Elevator can keep moving.");
 					byte[] floorData = new  byte[] {3};
@@ -255,7 +295,9 @@ public class Scheduler implements Runnable{
 					
 				}
 				
+				
 			}
+			*/
 		}
 	}
 	public synchronized boolean isRequestEmpty()
