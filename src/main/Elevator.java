@@ -6,7 +6,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -217,14 +216,11 @@ public class Elevator implements Runnable{
 			}
 			byte data[] = new byte[100];
 		    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
-		    //System.out.println("IntermediateHost: Waiting for Packet.\n");
 		    // Block until a datagram packet is received from receiveSocket.
 	        try {
-	        	System.out.printf("Elevatorwaiting for movement request\n");
-	        	this.receiveSocket.receive(receiveClientPacket);
-	        }
-	        catch(IOException e)
-	        {
+	        		System.out.printf("Elevator waiting for movement request\n");
+	        		this.receiveSocket.receive(receiveClientPacket);
+	        } catch(IOException e) {
 	        	System.out.print("IO Exception: likely:");
 	            e.printStackTrace();
 	        }
@@ -243,7 +239,7 @@ public class Elevator implements Runnable{
 				//can do fancy console printing if like
 				
 				//Message received format: [0 - floor - carButton]
-				System.out.println("Got request with contents");
+				System.out.println("Received request with contents:");
 				System.out.println(Arrays.toString(msg));
 				
 				if(this.getCurrentFloor() == msg[1])
@@ -336,18 +332,11 @@ public class Elevator implements Runnable{
 	 */
 	public void run()
 	{
-		System.out.println(Thread.currentThread().getName());
-		
-		if(Thread.currentThread().getName().equals("messageThread"))
-		{
+		if (Thread.currentThread().getName().equals("messageThread")) {
 			this.forever();
-		}
-		else if(Thread.currentThread().getName().equals("motorThread"))
-		{
+		} else if (Thread.currentThread().getName().equals("motorThread")) {
 			this.handleMovement();
-		}
-		else
-		{
+		} else {
 			this.start();
 		}
 
@@ -373,7 +362,6 @@ public class Elevator implements Runnable{
 			
 			this.setCurrentFloor(this.getDestFloor());;
 			int pendingR = this.anyPendingDest();
-			System.out.println("pendingR " + pendingR);
 			int destination = pendingR == 1 ? this.peekPending() : -1;
 			byte[] arrivalMessage = new byte[4];   //byte 4 is used to represent arrival to destination
 			arrivalMessage[0] = 5;
@@ -386,7 +374,7 @@ public class Elevator implements Runnable{
 			arrivalMsgSocket.send(arrivalMsgPkt);
 			arrivalMsgSocket.close();
 			
-			System.out.printf("Elevator got to destination floor: %d\n",destinationfloor);
+			System.out.printf("Elevator arrived to floor: %d\n",destinationfloor);
 			
 			return pendingR == 1;
 			
@@ -399,7 +387,6 @@ public class Elevator implements Runnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			Throwable  s = e.getCause();
-			System.out.println(s.getClass().getName());
 			System.out.printf("Elevator stopped at floor %d to answer request\n",currentfloor);			
 		}
 		

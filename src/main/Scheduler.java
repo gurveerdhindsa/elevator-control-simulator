@@ -3,10 +3,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-
 
 public class Scheduler implements Runnable{
 	
@@ -91,7 +87,6 @@ public class Scheduler implements Runnable{
 			//else if destination arrival message
 			else if((byte)elevatorMsg[0] == (byte)5) {
 				System.out.println("Received destination arrival message.");
-				System.out.println(elevatorMsg[1]);
 				if(elevatorMsg[1]==0) {       //elevator is stopped, currently waiting for next request
 					System.out.println("Sending next request to elevator.");
 					if(!requests.isEmpty())
@@ -126,8 +121,8 @@ public class Scheduler implements Runnable{
 					}
 					
 				}else {
-					System.out.println("Elevator got to destination but moving to new destination "
-							+ elevatorMsg[2] + elevatorMsg[3]);
+					System.out.println("Elevator picked up passenger. It is now heading to floor "
+							+ elevatorMsg[2]);
 				}
 			}
 				
@@ -171,7 +166,7 @@ public class Scheduler implements Runnable{
 					this.addRequest(elevator.currentFloor,r);
 					//requests.add(r);
 					System.out.println(Arrays.toString(actualMsg));
-					System.out.println("Elevator stationary. Sending move command to elevator."); // and notifying floor");
+					System.out.println("Elevator stationary. Sending move request to elevator."); // and notifying floor");
 					
 					//creating buffer to store data to send to elevator
 					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -189,14 +184,12 @@ public class Scheduler implements Runnable{
 					try {
 						DatagramSocket sendElevatorMove = new DatagramSocket();
 						SchedulerElevators selectedElevator = this.elevators.get(0);
-						System.out.println(selectedElevator.portNumber);
 						DatagramPacket elevatorPckt = 
 								new DatagramPacket(data,data.length,
 										InetAddress.getLocalHost(),selectedElevator.portNumber);
 						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());   //if elevator is stationary
 							sendElevatorMove.send(elevatorPckt);
 						//sendElevatorMove.send(floorPckt);
-						System.out.println("Sent movement");
 						sendElevatorMove.close();
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
@@ -206,7 +199,7 @@ public class Scheduler implements Runnable{
 				else {
 					//this.addRequest(elevator.currentFloor,r);
 					requests.add(r);
-					System.out.println("Elevator still moving. Added request to list.");
+					System.out.println("Elevator still moving. Added move request to list.");
 				}
 				
 				
