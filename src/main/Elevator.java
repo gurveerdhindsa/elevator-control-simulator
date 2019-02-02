@@ -201,20 +201,6 @@ public class Elevator implements Runnable{
 		//or looks like just port number might be enough for registration
 		while(true)
 		{
-			if(Thread.currentThread().isInterrupted())
-			{
-				if(this.motorThread == null)
-				{
-					return;
-				}
-				try {
-					this.motorThread.join();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				return;
-			}
 			byte data[] = new byte[100];
 		    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
 		    //System.out.println("IntermediateHost: Waiting for Packet.\n");
@@ -283,9 +269,19 @@ public class Elevator implements Runnable{
 			//door close message received
 			else if(msg[0]==(byte)2) {
 				
-				System.out.println("Closing doors. ");
+				
 				this.doorsOpen = false;
-				byte[] doorCloseMsg = new byte[] {2};
+				int pendingD = this.anyPendingDest();
+				System.out.println("Closing doors. with pendingD " + pendingD);
+				if(pendingD == 1)
+				{
+					this.setDestFloor(this.getPendingDest());
+					this.setDirection();
+					this.motorThread = new Thread(this, "motorThread");
+					this.motorThread.start();
+				}
+				
+				byte[] doorCloseMsg = new byte[] {2,(byte)pendingD};
 				try {
 					System.out.println("Sending door close message. ");
 					DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, InetAddress.getLocalHost(),69);
@@ -386,7 +382,7 @@ public class Elevator implements Runnable{
 			arrivalMsgSocket.send(arrivalMsgPkt);
 			arrivalMsgSocket.close();
 			
-			System.out.printf("Elevator got to destination floor: %d\n",destinationfloor);
+			System.out.printf("Elevator got to destination floor: %d\n and doors open",destinationfloor);
 			
 			return pendingR == 1;
 			
@@ -412,11 +408,7 @@ public class Elevator implements Runnable{
 	 */
 	public void handleMovement()
 	{
-		while(mimicMovement())
-		{
-			this.setDestFloor(this.getPendingDest());
-			this.setDirection();
-		}
+		mimicMovement();
 	}
 	
 	public static void main(String[] args)
