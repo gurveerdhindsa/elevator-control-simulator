@@ -109,6 +109,12 @@ public class Floor implements Runnable {
 				packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
 				System.out.println("Sending floor request...");
 				sendReceiveSocket.send(packet);
+				try {
+					Thread.sleep(8000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				// Reset the buffer for the next floor request
 				buffer.reset();
 			}

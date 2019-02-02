@@ -120,12 +120,10 @@ public class Elevator implements Runnable{
 	        catch(IOException e)
 	        {
 	        	System.out.print("IO Exception: likely:");
-	            System.out.println("Receive Socket Timed Out.\n" + e);
 	            e.printStackTrace();
 	        }
 
-			
-	        System.out.println("got request"); 
+
 			byte[] msg = receiveClientPacket.getData();
 			
 			//for message sequence here, need destination floor and 
@@ -154,23 +152,6 @@ public class Elevator implements Runnable{
 				}
 				this.setDirection(); 
 				this.stationary = false;
-				
-				byte[] elevMoving = new byte[] {6,1};
-				
-				try {
-					System.out.println("Sending register elevator");
-					//later on need elevator to know host of and port of scheduler when being instantiated
-					DatagramPacket pck = new DatagramPacket(elevMoving, elevMoving.length, 
-							InetAddress.getLocalHost(),69);
-					DatagramSocket soc = new DatagramSocket();
-					soc.send(pck);
-					soc.close();
-					System.out.println("Sent register elevator");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
 				this.motorThread = new Thread(this, "motorThread");
 				this.motorThread.start();
 				
@@ -216,15 +197,9 @@ public class Elevator implements Runnable{
 	}
 	public void start()
 	{
-		byte[] registerElev = new byte[] {0,0,0,0,0};
+		byte[] registerElev = new byte[] {0,0,0,1,0};
 		byte port = (byte) this.portNumber;
 		registerElev[4] = port;
-		if(stationary == true) {
-			registerElev[3] = 1;
-		}
-		else {
-			registerElev[3] = 0;
-		}
 		
 		try {
 			System.out.println("Sending register elevator");
@@ -241,7 +216,6 @@ public class Elevator implements Runnable{
 		}
 		
 		this.messageThread.start();
-		System.out.printf("Main thread: %s done its job\n",Thread.currentThread().getName());
 	}
 	
 	public void run()
@@ -350,30 +324,9 @@ public class Elevator implements Runnable{
 		return this.direction;
 	}
 	
-	public void exit()
-	{
-		System.exit(0);
-	}
-	
 	public static void main(String[] args)
 	{
 		Elevator e = new Elevator(70);
 		e.start();
 	}
-	
-	/*
-	 *Elevator Sequence
-	 *Starts from else condition of run method 
-	 *1) Register self with Scheduler - Tested
-	 *2) Listen for requests
-	 *3) Gets request say [0,2,0,5] sets floor number as destination floor and puts car number into its pending dest list and start moving
-	 *4) Moves to floor 2 from floor 0, checks if any pending requests to service, tells scheduler it has arrived at 2 and moving to 5
-	 *4a) gets a stop request when it has slept for 10s or 9.999s(floor 1)  [1,1,4] format [1 - currentfloor - newCarbutton]
-	 *    if going up and new carbutton is lower than head of pendingDest put new carrbutton as head of pendingdest. This 
-	 *    way motor goes to 4th floor, then wakes up tells scheduler am at 4th floor but going to 5th and then goes to 5th floor.
-	 *    
-	 *    please look at the code, write new test cases and try different scenarios, if it fails correct logic.
-	 *    just noticed that currentfloor, direction, destinationfloor are being accessed by both messageThread and motor thread
-	 *    need synchronized methods for those
-	 **/
 }

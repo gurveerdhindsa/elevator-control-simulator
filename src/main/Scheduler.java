@@ -22,9 +22,7 @@ public class Scheduler implements Runnable{
 		this.elevatorMsgThread = new Thread(this, "elevatorThread");
 		this.elevators = new ArrayList<>();
 		this.requests = new ArrayList<>();
-		for (int i=0; i<50; i++) {
-		    requests.add(i, new FloorRequest());
-		}
+		
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(69);
 			this.receiveFloorSocket = new DatagramSocket(45);
@@ -96,7 +94,7 @@ public class Scheduler implements Runnable{
 				System.out.println(elevatorMsg[1]);
 				if(elevatorMsg[1]==0) {       //elevator is stopped, currently waiting for next request
 					System.out.println("Sending next request to elevator.");
-					if(requests.get(0).timestamp != null)
+					if(!requests.isEmpty())
 					{
 						ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 						buffer.write((byte) 0);
@@ -114,10 +112,7 @@ public class Scheduler implements Runnable{
 									new DatagramPacket(data,data.length,
 											InetAddress.getLocalHost(),selectedElevator.portNumber);
 							//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
-							if(selectedElevator.isStationary == 1) {    //if elevator is stationary
-								sendElevatorMove.send(elevatorPckt);
-							}
-							//sendElevatorMove.send(floorPckt);
+							sendElevatorMove.send(elevatorPckt);
 							System.out.println("Sent movement");
 							sendElevatorMove.close();
 						} catch (IOException e) {
@@ -125,18 +120,14 @@ public class Scheduler implements Runnable{
 							e.printStackTrace();
 						}
 					}
+					else
+					{
+						System.out.println("No more requests elevator stopped completely");
+					}
 					
-					
-					
-				}
-				else if(elevatorMsg[1]== 1) {
-					System.out.println("Elevator already has a pending request. Not sending any more requests yet.");
-				}
-				else if((byte)elevatorMsg[0] == (byte)6)
-				{
-					//register elevator 
-					SchedulerElevators elevator = new SchedulerElevators();
-					elevator.isStationary = ((int)elevatorMsg[1]);
+				}else {
+					System.out.println("Elevator got to destination but moving to new destination "
+							+ elevatorMsg[2] + elevatorMsg[3]);
 				}
 			}
 				
@@ -180,38 +171,6 @@ public class Scheduler implements Runnable{
 					this.addRequest(elevator.currentFloor,r);
 					//requests.add(r);
 					System.out.println(Arrays.toString(actualMsg));
-					
-					
-					//call to isEmpty
-					//checks if any elevators available
-					//if none blocks the listen to messages
-					//from floor thread till an elevator is 
-					//registered
-					
-
-					//[Should have two arraylists for up and down requests for now]
-					//single elevator for now so definitely selecting 
-					//elevator at index 0, if elevator is moving 
-					//check elevators current floor & direction, if 
-					//same direction as request and difference between
-					// currentFloor and requestFloor > 1 
-					//else if stationary start new thread and name it 
-					//closeDoor(easy because of single elevator, otherwise
-					//don't know which elevator door to close)
-					
-					//(probably create a processing thread that should handle 
-					//this. Basically have a linkedlist for now since 		
-					//doing FIFO. if when processing thread is started 
-					//linked list empty, it should get stuck on wait.
-					//once this thread puts into the linked list
-					//it should notifyall. [Another two new sync methods 
-					// isRequestEmpty and addRequest that adds to linked
-					//list or checks if empty]. if there are requests 
-					//to handle get our single elevator.....
-					//my brain got lost here so need help with this one 
-					//as listenFloorMsg can't have too much processing 
-					//otherwise would miss the floor arrival notification from
-					//floor)
 					System.out.println("Elevator stationary. Sending move command to elevator."); // and notifying floor");
 					
 					//creating buffer to store data to send to elevator
@@ -224,6 +183,7 @@ public class Scheduler implements Runnable{
 					byte[] data = buffer.toByteArray();
 					System.out.println("Sent following to elevator: " + Arrays.toString(data));
 					
+					elevator.isStationary = 0;
 					//byte[] floorData = new  byte[] {3};
 					
 					try {
@@ -233,10 +193,8 @@ public class Scheduler implements Runnable{
 						DatagramPacket elevatorPckt = 
 								new DatagramPacket(data,data.length,
 										InetAddress.getLocalHost(),selectedElevator.portNumber);
-						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
-						if(selectedElevator.isStationary == 1) {    //if elevator is stationary
+						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());   //if elevator is stationary
 							sendElevatorMove.send(elevatorPckt);
-						}
 						//sendElevatorMove.send(floorPckt);
 						System.out.println("Sent movement");
 						sendElevatorMove.close();
@@ -332,7 +290,7 @@ public class Scheduler implements Runnable{
 	}
 	public synchronized void addRequest(int index, FloorRequest r)
 	{
-		requests.set(index,r);
+		requests.add(r);
 	}
 	
 	public void closeDoor() {

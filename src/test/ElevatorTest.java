@@ -24,7 +24,7 @@ public class ElevatorTest {
 	 * sends its information such as port number to the 
 	 * Scheduler on port 69 
 	 */
-	@Test 
+	/*@Test 
 	public void testRegistration()
 	{
 		Thread elevThread = new Thread(new Runnable()
@@ -69,6 +69,7 @@ public class ElevatorTest {
 	 * to the request floor and then the car button
 	 * floor
 	 */
+	
 	@Test
 	public void testReceiveRequest()
 	{
@@ -129,14 +130,16 @@ public class ElevatorTest {
 		assertTrue((int)arrival[3] == 2); // current floor of this elevator
 		
 	}
-	
+
 	/**
 	 * 
 	 */
 	@Test
 	public void testSendDoorCloseMsg()
 	{
-		Thread elevThread = new Thread(new Elevator(10));
+		Elevator elev = new Elevator(10);
+		
+		Thread elevThread = new Thread(elev);
 	
 		elevThread.start();
 		
