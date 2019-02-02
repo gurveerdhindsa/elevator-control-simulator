@@ -107,7 +107,8 @@ public class Floor implements Runnable {
 				byte[] request = buffer.toByteArray();
 				// Create datagram packet to send
 				packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
-				System.out.println("Sending floor request...");
+				System.out.println(new SimpleDateFormat("hh:mm:ss.SSS").format(floorRequest.timestamp) + ": Passenger request to go " + floorRequest.floorButton.toLowerCase() + " from floor " + floorRequest.floor + " to " + floorRequest.carButton);
+
 				sendReceiveSocket.send(packet);
 				try {
 					Thread.sleep(8000);
