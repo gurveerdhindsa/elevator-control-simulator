@@ -70,24 +70,14 @@ public class ElevatorTest {
 	 * floor
 	 */
 	
-	@Test
+	/*@Test
 	public void testReceiveRequest()
 	{
 		//In order that Junit Thread 
 		//can operate simulatenously with the Threads 
 		// of the System under test. 
-		Thread elevThread = new Thread(new Runnable()
-				{
-			@Override
-			public void run()
-			{
-				Elevator elev = new Elevator(23);
-				elev.run();
-			}
-				});
-		
-		elevThread.start();
-		
+		Elevator elev = new Elevator(10);
+		elev.start();
 		//mimicking the scheduler sending a message with 
 		// Msg Id = 0 - signifies a floor request
 		// floorNumber = 2 - signifies which floor the request is coming from
@@ -95,7 +85,7 @@ public class ElevatorTest {
 		byte[] request = new byte[] {0, 2, 5, 0};
 		try {
 			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
-					InetAddress.getLocalHost(),23);
+					InetAddress.getLocalHost(),10);
 			DatagramSocket sendReq = new DatagramSocket();
 			sendReq.send(requestPckt);
 			sendReq.close();
@@ -142,6 +132,7 @@ public class ElevatorTest {
 		Thread elevThread = new Thread(elev);
 	
 		elevThread.start();
+		//elev.start();
 		
 		byte[] doorCloseMsg = new byte[] {2};
 		try {
@@ -169,8 +160,11 @@ public class ElevatorTest {
 			fail("Did not Receive");
 			e.printStackTrace();
 		}	
+		//elev.stop();
 		//elevThread.interrupt();
 		assertTrue(doorClosedMsg[0] == 2);
+		//System.gc();
+		
 		}
 
 }

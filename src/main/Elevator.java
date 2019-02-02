@@ -11,9 +11,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 
+/**
+ * Represents the Elevator Subsystem,
+ * which when instantiated notifies the
+ * Scheduler subsystem of its existence and 
+ * sit idle till it receives a request. 
+ * When Message received from Scheduler it is 
+ * decoded and appropriate actions is taken such 
+ * closing doors or moving the elevator
+ */
 public class Elevator implements Runnable{
 	
-	private DatagramSocket receiveSocket; //non primitive fields start as null
+	private DatagramSocket receiveSocket;
 	private int currentfloor;
 	private int destinationfloor;
 	private boolean stationary;
@@ -23,10 +32,13 @@ public class Elevator implements Runnable{
 	private Thread messageThread;
 	private LinkedList<Integer>pendingDestinations;
 	private int direction; // 1 is up -1 is down
-	private int initial;
-	private int motorExit;
 
 	
+	/**
+	 * Constructor for an Elevator
+	 * @param portNumber The Elevator 
+	 *  instance's portNumber on which to receive messages 
+	 */
 	public Elevator(int portNumber)
 	{
 		this.stationary = true;
@@ -46,15 +58,97 @@ public class Elevator implements Runnable{
 		}
 	}
 	
+	/**
+	 * A synchronized method that 
+	 * returns the currentFloor an
+	 * elevator instance currently on
+	 * @return the currentfloor field
+	 */
+	public synchronized int  getCurrentFloor()
+	{
+		return this.currentfloor;
+	}
+	
+	/**
+	 * A synchronized access to the 
+	 * destinationFloor field of an elevator
+	 * instance
+	 * @return the destinationfloor
+	 * field representing which floor
+	 * the elevator is currently headed to
+	 */
+	public synchronized int getDestFloor()
+	{
+		return this.destinationfloor;
+	}
+	
+	/**
+	 * Syncrhonized setter for the destinationFloor field
+	 * @param floor the floor to which the elevator should
+	 * move
+	 */
+	public synchronized void setDestFloor(int floor)
+	{
+		this.destinationfloor = floor;
+	}
+	
+	/**
+	 * Synchronized setter for the currentFloor field
+	 * @param floor the floor the elevator is currently on
+	 */
+	public synchronized void setCurrentFloor(int floor)
+	{
+		this.currentfloor = floor;
+	}
+	
+	/**
+	 * Synchronizes the setting of the 
+	 * direction field of an elevator
+	 * instance
+	 */
+	public synchronized void setDirection()
+	{
+		this.direction = (this.destinationfloor - this.currentfloor)/
+				Math.abs(this.destinationfloor - this.currentfloor);
+	}
+	
+	/**
+	 * Gets the value of the direction field 
+	 * @return 1 if current direction is up 
+	 * and -1 if down
+	 */
+	public synchronized int getDirection()
+	{
+		return this.direction;
+	}
+	
+	/**
+	 * Checks if there are pending destination 
+	 * the elevator instance still has to visit
+	 * @return the floor number at the top of 
+	 * the pending destinations list
+	 */
 	private synchronized int peekPending()
 	{
 		return this.pendingDestinations.peekFirst();
 	}
+	
+	/**
+	 * removes and return the head of the 
+	 * pending destination list
+	 * @return the floor number at the head
+	 * of the pending destination list
+	 */
 	private synchronized int getPendingDest()
 	{
 		return this.pendingDestinations.removeFirst();
 	}
 	
+	/**
+	 * Adds a floor number to the list of pending
+	 * destinations the elevator instance as to visit
+	 * @param destination The new floor number to add
+	 */
 	private synchronized void addPendingDest(int destination)
 	{
 		if(this.pendingDestinations.isEmpty())
@@ -63,14 +157,14 @@ public class Elevator implements Runnable{
 			return;
 		}
 		
-		//if direction is up
-		
-		//if direction is down
 		this.pendingDestinations.add(destination);
+		
+		//if elevator going up then floors sorted in ascending order
 		if(this.getDirection() == 1)
 		{
 			Collections.sort(this.pendingDestinations);
 		}
+		//elevator going down then floors sorted in descending order
 		else
 		{
 			Collections.sort(this.pendingDestinations, Collections.reverseOrder());
@@ -78,16 +172,13 @@ public class Elevator implements Runnable{
 		
 	}
 	
-	private synchronized int motorExit(int read)
-	{
-		if(read == 1)
-		{
-			return this.motorExit;
-		}
-		
-		this.motorExit = 1;
-		return 0;
-	}
+	/**
+	 * Checks if there are any destinations in 
+	 * the pending destinations list of an 
+	 * elevator instance
+	 * @return 0 if no pending destinations and 1
+	 * if there is.
+	 */
 	private synchronized int anyPendingDest()
 	{
 		if(this.pendingDestinations.isEmpty())
@@ -98,17 +189,32 @@ public class Elevator implements Runnable{
 		return 1;
 	}
 	
+	/**
+	 * The messageThread runs continuously listening for
+	 * messages sent to this elevator instance.
+	 */
 	public void forever()
-	{
-		System.out.println(Thread.currentThread().getName());
-		
+	{	
 		//don't know how we want to this yet
 		//maybe create a schedulerElevator instance 
 		//fill in the required of port number convert it to bytes
 		//or looks like just port number might be enough for registration
 		while(true)
 		{
-			
+			if(Thread.currentThread().isInterrupted())
+			{
+				if(this.motorThread == null)
+				{
+					return;
+				}
+				try {
+					this.motorThread.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return;
+			}
 			byte data[] = new byte[100];
 		    DatagramPacket receiveClientPacket = new DatagramPacket(data, data.length);
 		    //System.out.println("IntermediateHost: Waiting for Packet.\n");
@@ -122,7 +228,6 @@ public class Elevator implements Runnable{
 	        	System.out.print("IO Exception: likely:");
 	            e.printStackTrace();
 	        }
-
 
 			byte[] msg = receiveClientPacket.getData();
 			
@@ -195,6 +300,13 @@ public class Elevator implements Runnable{
 		}
 		
 	}
+	
+	/**
+	 * Method executed by initial thread assigned to an
+	 * instance of this runnable. It registers the instance
+	 * with the scheduler and then starts another Thread 
+	 * to listen for messages on the instances portNumber
+	 */
 	public void start()
 	{
 		byte[] registerElev = new byte[] {0,0,0,1,0};
@@ -218,6 +330,10 @@ public class Elevator implements Runnable{
 		this.messageThread.start();
 	}
 	
+	/**
+	 * The run method of this runnable in which all threads
+	 * start
+	 */
 	public void run()
 	{
 		System.out.println(Thread.currentThread().getName());
@@ -237,6 +353,11 @@ public class Elevator implements Runnable{
 
 	}
 	
+	/**
+	 * Mimics the movement of an elevator between floors
+	 * @return True if there are pending destinations still to
+	 * visit. False if no pending destinations
+	 */
 	private Boolean mimicMovement()
 	{
 		//here function should calculate the number of floors it needs to move 
@@ -284,6 +405,11 @@ public class Elevator implements Runnable{
 		
 		return false;
 	}
+	
+	/**
+	 * Controls the movement of an elevator instance
+	 * 
+	 */
 	public void handleMovement()
 	{
 		while(mimicMovement())
@@ -291,37 +417,6 @@ public class Elevator implements Runnable{
 			this.setDestFloor(this.getPendingDest());
 			this.setDirection();
 		}
-	}
-	
-	public synchronized int  getCurrentFloor()
-	{
-		return this.currentfloor;
-	}
-	
-	public synchronized int getDestFloor()
-	{
-		return this.destinationfloor;
-	}
-	
-	public synchronized void setDestFloor(int floor)
-	{
-		this.destinationfloor = floor;
-	}
-	
-	public synchronized void setCurrentFloor(int floor)
-	{
-		this.currentfloor = floor;
-	}
-	
-	public synchronized void setDirection()
-	{
-		this.direction = (this.destinationfloor - this.currentfloor)/
-				Math.abs(this.destinationfloor - this.currentfloor);
-	}
-	
-	public synchronized int getDirection()
-	{
-		return this.direction;
 	}
 	
 	public static void main(String[] args)
