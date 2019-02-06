@@ -15,10 +15,13 @@ import java.util.*;
 public class Scheduler implements Runnable{
 	
 	private Thread floorMsgThread, elevatorMsgThread;
+	//private Thread elevator1Thread, elevator2Thread, elevator3Thread, elevator4Thread;
 	private DatagramSocket receiveElevatorSocket;
 	private DatagramSocket receiveFloorSocket;
 	private ArrayList<SchedulerElevators> elevators;
 	private ArrayList<FloorRequest>requests;
+	
+	private boolean requestExists;
 	
 	/**
 	 * Constructor for the Scheduler
@@ -30,10 +33,16 @@ public class Scheduler implements Runnable{
 	public Scheduler()
 	{
 		this.floorMsgThread = new Thread(this,"floorThread");
-		this.elevatorMsgThread = new Thread(this, "elevatorThread");
+		this.elevatorMsgThread = new Thread(this, "elevatorThread");      //this will be removed
+		//this.elevator1Thread = new Thread(this, "elevator1Thread");
+		//this.elevator2Thread = new Thread(this, "elevator2Thread");
+		//this.elevator3Thread = new Thread(this, "elevator3Thread");
+		//this.elevator4Thread = new Thread(this, "elevator4Thread");
 		this.elevators = new ArrayList<>();
 		this.requests = new ArrayList<>();
-		
+		for (int i=0; i<20; i++) {
+		    requests.add(i, new FloorRequest());
+		}
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(69);
 			this.receiveFloorSocket = new DatagramSocket(45);
@@ -110,12 +119,14 @@ public class Scheduler implements Runnable{
 			//else if door closed  
 			else if((byte)elevatorMsg[0] == (byte)2) 
 			{
-				if(elevatorMsg[1] == 0 && !isRequestEmpty())
+				
+				if(elevatorMsg[1] == 0 && !isFloorEmpty(0))   //parameter for isFloorEmpty will be floor of currentfloor update
+					                                           //sent by elevator every 8 seconds
 				{
 					System.out.println("Received doors closed message from elevator and has no pending dest");
 					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 					buffer.write((byte) 0);
-					FloorRequest request = requests.remove(0);
+					FloorRequest request = requests.remove(0);    //need to change this to remove current floor index instead of
 					buffer.write((byte) request.floor);
 					buffer.write((byte) request.carButton);
 					
@@ -146,7 +157,7 @@ public class Scheduler implements Runnable{
 			else if((byte)elevatorMsg[0] == (byte)5) {
 				System.out.println("Received destination arrival message.");
 				System.out.println(elevatorMsg[1]);
-				if(elevatorMsg[1]==0 && isRequestEmpty()) {  
+				if(elevatorMsg[1]==0 && isRequestEmpty()) {              
 					System.out.println("Elevator stopped finally");
 				}
 				else
@@ -196,7 +207,7 @@ public class Scheduler implements Runnable{
 				isEmpty();
 				//adding new request to front of requests linked list
 				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
-				this.addRequest(0,r);
+				this.addRequest(r.floor,r);
 
 				SchedulerElevators elevator = this.elevators.get(0);
 				if(this.elevators.get(0).isStationary == 1)
@@ -288,8 +299,15 @@ public class Scheduler implements Runnable{
 	 * to denote if the floor request array list is 
 	 * empty or not
 	 */
-	public synchronized boolean isRequestEmpty()
+	public synchronized boolean isFloorEmpty(int index)
 	{
+		if(requests.get(index).timestamp==null) {
+			return true;
+		}
+		return false;
+	}
+	
+	public synchronized boolean isRequestEmpty() {
 		return requests.isEmpty();
 	}
 	/**
@@ -302,7 +320,7 @@ public class Scheduler implements Runnable{
 	
 	public synchronized void addRequest(int index, FloorRequest r)
 	{
-		requests.add(r);
+		requests.set(index,r);
 	}
 	
 	/**
@@ -362,6 +380,20 @@ public class Scheduler implements Runnable{
 		{
 			this.listenForElevatorMsg();
 		}
+		/*
+		 * else if(Thread.currentThread().getName().equals("elevator1Thread")){
+		 *     this.listenForElevatorMsg();
+		 * }
+		 * else if(Thread.currentThread().getName().equals("elevator2Thread")){
+		 *     this.listenForElevatorMsg();
+		 * }
+		 * else if(Thread.currentThread().getName().equals("elevator3Thread")){
+		 *     this.listenForElevatorMsg();
+		 * }
+		 * else if(Thread.currentThread().getName().equals("elevator4Thread")){
+		 *     this.listenForElevatorMsg();
+		 * }
+		 */
 		
 	}
 	
