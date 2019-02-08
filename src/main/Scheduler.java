@@ -114,6 +114,14 @@ public class Scheduler implements Runnable{
 				elevator.isStationary = ((int)elevatorMsg[3]);
 				elevator.portNumber = (int)elevatorMsg[4];
 				this.addElevator(elevator);
+				
+				// Thread somethread = new Thread(new SchedulerElevators(
+				//send response back to elevator telling it new port number
+				//assigned to it.
+				//have ArrayList<Integer>
+				//add(our new portnumber)
+				//when 
+				
 			}
 			
 			//else if door closed  
