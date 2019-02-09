@@ -19,7 +19,8 @@ public class Scheduler implements Runnable{
 	private DatagramSocket receiveElevatorSocket;
 	private DatagramSocket receiveFloorSocket;
 	private ArrayList<SchedulerElevators> elevators;
-	private ArrayList<FloorRequest>requests;
+	private ArrayList<FloorRequest>upRequests;
+	private ArrayList<FloorRequest>downRequests;
 	
 	private boolean requestExists;
 	
@@ -33,15 +34,15 @@ public class Scheduler implements Runnable{
 	public Scheduler()
 	{
 		this.floorMsgThread = new Thread(this,"floorThread");
-		this.elevatorMsgThread = new Thread(this, "elevatorThread");      //this will be removed
-		//this.elevator1Thread = new Thread(this, "elevator1Thread");
-		//this.elevator2Thread = new Thread(this, "elevator2Thread");
-		//this.elevator3Thread = new Thread(this, "elevator3Thread");
-		//this.elevator4Thread = new Thread(this, "elevator4Thread");
+		this.elevatorMsgThread = new Thread(this, "elevatorThread"); 
 		this.elevators = new ArrayList<>();
-		this.requests = new ArrayList<>();
+		this.upRequests = new ArrayList<>();
+		this.downRequests = new ArrayList<>();
 		for (int i=0; i<20; i++) {
-		    requests.add(i, new FloorRequest());
+		    upRequests.add(i, new FloorRequest());
+		}
+		for (int i=0; i<20; i++) {
+		    downRequests.add(i, new FloorRequest());
 		}
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(69);
@@ -99,7 +100,7 @@ public class Scheduler implements Runnable{
 				continue; //@TODO get rid of and do better handling
 			}
 			
-			System.out.println("Elevator message received");
+			System.out.println("Elevator message received for register elevator");
 			System.out.println(Arrays.toString(elevatorMsg));
 			
 			//think for register elevator 
@@ -108,19 +109,38 @@ public class Scheduler implements Runnable{
 			if((byte)elevatorMsg[0] == (byte)0)
 			{
 				//register elevator 
-				SchedulerElevators elevator = new SchedulerElevators();
-				elevator.currentFloor = (int)elevatorMsg[1];
-				elevator.destinationFloor = (int)elevatorMsg[2];
-				elevator.isStationary = ((int)elevatorMsg[3]);
-				elevator.portNumber = (int)elevatorMsg[4];
-				this.addElevator(elevator);
+				//SchedulerElevators elevator = new SchedulerElevators();
+				//elevator.currentFloor = (int)elevatorMsg[1];
+				//elevator.destinationFloor = (int)elevatorMsg[2];
+				//elevator.isStationary = ((int)elevatorMsg[3]);
+				//elevator.portNumber = (int)elevatorMsg[4];
+				//this.addElevator(elevator);
 				
 				// Thread somethread = new Thread(new SchedulerElevators(
 				//send response back to elevator telling it new port number
 				//assigned to it.
 				//have ArrayList<Integer>
 				//add(our new portnumber)
-				//when 
+				//when
+
+				ArrayList<Integer> assignedPorts;
+				for(int p=40; p<45; p++) {
+					assignedPorts.add(p);
+				}
+				
+				int elevatorPort = (int)elevatorMsg[4];
+				
+				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+				int port = assignedPorts.remove(0);
+				int initList;
+				if(port%2==0) {
+					initList = 1;
+				}
+				else {
+					initList = -1;
+				}
+				
+				Thread newElevator = new Thread(new SchedulerElevators(upRequests, downRequests, elevatorPort, port, initList));
 				
 			}
 			
@@ -128,9 +148,9 @@ public class Scheduler implements Runnable{
 			else if((byte)elevatorMsg[0] == (byte)2) 
 			{
 				
-				if(elevatorMsg[1] == 0 && !isFloorEmpty(0))   //parameter for isFloorEmpty will be floor of currentfloor update
+				if(elevatorMsg[1] == 0 && !isFloorEmpty(0))  { //parameter for isFloorEmpty will be floor of currentfloor update
 					                                           //sent by elevator every 8 seconds
-				{
+				
 					System.out.println("Received doors closed message from elevator and has no pending dest");
 					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 					buffer.write((byte) 0);
