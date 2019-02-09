@@ -128,12 +128,40 @@ public class ElevatorTest {
 	public void testSendDoorCloseMsg()
 	{
 		Elevator elev = new Elevator(10);
-		
 		Thread elevThread = new Thread(elev);
-	
-		elevThread.start();
-		//elev.start();
 		
+		byte[] regist = new byte[40];
+		try
+		{
+			DatagramPacket registration = new DatagramPacket(regist,regist.length);
+			DatagramSocket getRegist = new DatagramSocket(69);
+			
+			//start an elevator with all its child threads 
+			elevThread.start();
+			//mimic the listening for that information on the scheduler side
+			getRegist.receive(registration);
+			getRegist.close();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		assertTrue(regist[4] == (byte)10);
+		
+		//mimic sending registration confirmed from scheduler side
+		byte[] sampleConfirmation = new byte[] {1, 12, 1};
+		try {
+			DatagramPacket doorClosePckt = new DatagramPacket(sampleConfirmation, sampleConfirmation.length,
+					InetAddress.getLocalHost(),10);
+			DatagramSocket doorCloseSocket = new DatagramSocket();
+			doorCloseSocket.send(doorClosePckt);
+			doorCloseSocket.close();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		//mimic sneding door close from scheduler side
 		byte[] doorCloseMsg = new byte[] {2};
 		try {
 			DatagramPacket doorClosePckt = new DatagramPacket(doorCloseMsg,doorCloseMsg.length,
@@ -147,24 +175,68 @@ public class ElevatorTest {
 			e.printStackTrace();
 		} 
 		
-		byte[] doorClosedMsg = new byte[1];	
+		//mimic sending a request from scheduler side 
+		//request being sent is floor = 2, carButton = 7, direction = Up
+		byte[] request = new byte[] {4, 2, 7, 1};	
 		try {
-			DatagramPacket doorClosed = new DatagramPacket(doorClosedMsg, doorClosedMsg.length);
-			DatagramSocket doorClosedSocket = new DatagramSocket(69);
-			doorClosedSocket.receive(doorClosed);
+			DatagramPacket doorClosed = new DatagramPacket(request, request.length,
+					InetAddress.getLocalHost(), 10);
+			DatagramSocket doorClosedSocket = new DatagramSocket();
+			doorClosedSocket.send(doorClosed);
 			doorClosedSocket.close();
-			assertTrue(doorClosed.getData().length == 1);
 		}
 		catch(IOException e)
 		{
 			fail("Did not Receive");
 			e.printStackTrace();
-		}	
-		//elev.stop();
-		//elevThread.interrupt();
-		assertTrue(doorClosedMsg[0] == 2);
-		//System.gc();
-		
 		}
-
+		
+		//listening for elevator Ready message
+		try {
+			DatagramPacket doorClosed = new DatagramPacket(request, request.length);
+			DatagramSocket doorClosedSocket = new DatagramSocket(12);
+			doorClosedSocket.receive(doorClosed);
+			doorClosedSocket.close();
+			System.out.println("Received ready with " + Arrays.toString(request));
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		//sending move
+		byte[] move = new byte[] {6};
+		
+		try
+		{
+			DatagramPacket doorClosed = new DatagramPacket(move, move.length,
+					InetAddress.getLocalHost(), 10);
+			DatagramSocket doorClosedSocket = new DatagramSocket();
+			doorClosedSocket.send(doorClosed);
+			doorClosedSocket.close();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		int i = 0;
+		
+		//listening for 8s notifications
+		while(i < 3)
+		{
+			byte[] sensorNot = new byte[4];
+			try
+			{
+				DatagramPacket sesnor = new DatagramPacket(sensorNot, sensorNot.length);
+				DatagramSocket sensor = new DatagramSocket(12);
+				sensor.receive(sesnor);
+				sensor.close();
+				System.out.println("Receieved 8s not with " + Arrays.toString(sensorNot));
+				i++;
+			} catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+		}
+		
+	}
 }
