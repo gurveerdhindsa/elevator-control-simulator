@@ -230,7 +230,7 @@ public class ElevatorTest {
 				DatagramSocket sensor = new DatagramSocket(12);
 				sensor.receive(sesnor);
 				sensor.close();
-				System.out.println("Receieved 8s not with " + Arrays.toString(sensorNot));
+				System.out.println("Receieved 2s not with " + Arrays.toString(sensorNot));
 				i++;
 			} catch(IOException e)
 			{

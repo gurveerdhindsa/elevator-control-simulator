@@ -67,10 +67,8 @@ public class SchedulerElevators implements Runnable{
 				this.up.set(floor, new FloorRequest());
 				return req;
 			}
-			else {
-				return new FloorRequest();
-			}
 		}
+		return null;
 	  }
 	
 	//is there an down request in the current floor?
@@ -81,13 +79,11 @@ public class SchedulerElevators implements Runnable{
 			if(this.down.get(floor).timestamp != null)
 			{
 				FloorRequest req = this.down.get(floor);
-				this.down.set(floor, new FloorRequest());      //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX IN THE LIST
+				this.down.set(floor, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX IN THE LIST
 				return req;
 			}
-			else {
-				return new FloorRequest();
-			}
 		}
+		return null;
 	  }
 	
 	//At initialization - check all up requests starting from parameter floor to 19 
@@ -128,12 +124,14 @@ public class SchedulerElevators implements Runnable{
 			}
 			
 			FloorRequest req = this.up.get(reqIndex);
-			this.up.set(reqIndex, new FloorRequest());      //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX	IN THE LIST
+			this.up.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX	IN THE LIST
 			return req;
 		}
 	}
 	
-	//At initialization - check all down requests starting from floor 19 to 0 
+	//At initialization or when stationary and no requests
+	//in curr direction
+	//- check all down requests starting from floor 19 to 0 
 	private FloorRequest checkInitialDown(int floor)
 	{
 		boolean empty = true;
@@ -215,13 +213,12 @@ public class SchedulerElevators implements Runnable{
 			//Arrival notification
 			else if(msg[0] == 8)
 			{
-				/**
+				/** breakdown into two fucntions,
+				 *  up direction Arrival and down direction arrival
 				 * FloorRequest req;
 				 * if currentFloor == topMostFloor
 				 * {
-				 *     req = checkDownRequest()
-				 *     if req == null 
-				 *         checkInitialDown(currentFloor)
+				 *     checkInitialDown(currentFloor)
 				 * }
 				 * else if(direction == 1 && msg[pendingIndicator] != 1)
 				 * {
@@ -234,7 +231,7 @@ public class SchedulerElevators implements Runnable{
 				 *    }
 				 *    
 				 *    if there is somekind of request do process below
-				 *    close door 
+				 *    sendDoorClose();
 				 *    this.currentRequest = req;
 				 *        
 				 * }
@@ -290,7 +287,7 @@ public class SchedulerElevators implements Runnable{
 	public void handleUp8s()
 	{
 		FloorRequest req = null;
-		
+		this.updateCurrentFloor();
 		if(this.currentFloor != this.destinationFloor)
 		{
 			req = getUpCurrentFloorRequest(this.currentFloor);
@@ -306,7 +303,7 @@ public class SchedulerElevators implements Runnable{
 	public void handleDown8s()
 	{
 		FloorRequest req = null;
-		
+		this.updateCurrentFloor();
 		if(this.currentFloor != this.destinationFloor)
 		{
 			req = getDownCurrentFloorRequest(this.currentFloor);

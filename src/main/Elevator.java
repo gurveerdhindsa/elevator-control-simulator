@@ -301,10 +301,10 @@ public class Elevator implements Runnable{
 		while(this.sensorCount > 0)
 		{
 			try {
-				Thread.sleep(8000);
+				Thread.sleep(2000);
 				sendSensorMsg();
 				this.sensorCount --;
-				Thread.sleep(1500);
+				Thread.sleep(700);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -346,7 +346,7 @@ public class Elevator implements Runnable{
 		//multiply the avg 10000milliseconds to 1 floor by the number of floors 
 		try {
 			System.out.println("Elevator moving");
-			Thread.sleep(floorDiff*10000);
+			Thread.sleep(floorDiff*3000);
 			//if thread wakes up on its own then it got to the final destination 
 			//that was updated when the move request was received
 			//so we update current floor as that floor
