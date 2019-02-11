@@ -15,14 +15,13 @@ import java.util.*;
 public class Scheduler implements Runnable{
 	
 	private Thread floorMsgThread, elevatorMsgThread;
-	//private Thread elevator1Thread, elevator2Thread, elevator3Thread, elevator4Thread;
 	private DatagramSocket receiveElevatorSocket;
 	private DatagramSocket receiveFloorSocket;
 	private ArrayList<SchedulerElevators> elevators;
 	private ArrayList<FloorRequest>upRequests;
 	private ArrayList<FloorRequest>downRequests;
-	
-	private boolean requestExists;
+	private ArrayList<Integer>portNumbers;
+	private int initialRequestList;
 	
 	/**
 	 * Constructor for the Scheduler
@@ -31,13 +30,18 @@ public class Scheduler implements Runnable{
 	 * to listen/send messages to and from elevator
 	 */
 	
-	public Scheduler()
+	public Scheduler(int numberOfElevators, int basePortNumber)
 	{
 		this.floorMsgThread = new Thread(this,"floorThread");
 		this.elevatorMsgThread = new Thread(this, "elevatorThread"); 
 		this.elevators = new ArrayList<>();
 		this.upRequests = new ArrayList<>();
 		this.downRequests = new ArrayList<>();
+		this.portNumbers = new ArrayList<>();
+		for(int i = 0; i < numberOfElevators; i++)
+		{
+			this.portNumbers.add(basePortNumber + i);
+		}
 		for (int i=0; i<20; i++) {
 		    upRequests.add(i, new FloorRequest());
 		}
@@ -52,29 +56,6 @@ public class Scheduler implements Runnable{
 			e.printStackTrace();
 		}
 	}
-	
-	/**
-	 * A synchronized method that 
-	 * is used to ensure the scheduler waits until
-	 * an elevator is registered
-	 */
-	
-	private synchronized void isEmpty()
-	{
-		if(this.elevators.isEmpty())
-		{
-			try {
-				wait();
-				//not sure how is wait interrupted yet
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		//if not empty do nothing and just allow for continued 
-		//execution
-	}
-	
 	/**
 	 * The elevatorThread runs continuously listening for
 	 * messages sent to the scheduler by the elevator 
@@ -103,18 +84,26 @@ public class Scheduler implements Runnable{
 			System.out.println("Elevator message received for register elevator");
 			System.out.println(Arrays.toString(elevatorMsg));
 			
-			//think for register elevator 
-			//jsut need to send portNumber and 
-			//the msg[0] byte signifying register elevator msg
+			switch(elevatorMsg[0])
+			{
+			case 0:
+				SchedulerElevators elevator = new SchedulerElevators(this.upRequests,
+						this.downRequests, elevatorMsg[4],this.portNumbers.remove(0),this.initialRequestList);
+				this.initialRequestList = (this.initialRequestList + 1)%2;
+				this.elevators.add(elevator);
+				Thread elevThread = new Thread(elevator, "SchedulerElevator: " + this.elevators.size());
+				elevThread.start();
+				break;
+			
+			default:
+				break;
+			}
+			
+			/*
 			if((byte)elevatorMsg[0] == (byte)0)
 			{
 				//register elevator 
-				//SchedulerElevators elevator = new SchedulerElevators();
-				//elevator.currentFloor = (int)elevatorMsg[1];
-				//elevator.destinationFloor = (int)elevatorMsg[2];
-				//elevator.isStationary = ((int)elevatorMsg[3]);
-				//elevator.portNumber = (int)elevatorMsg[4];
-				//this.addElevator(elevator);
+				//
 				
 				// Thread somethread = new Thread(new SchedulerElevators(
 				//send response back to elevator telling it new port number
@@ -123,7 +112,7 @@ public class Scheduler implements Runnable{
 				//add(our new portnumber)
 				//when
 
-				ArrayList<Integer> assignedPorts;
+				ArrayList<Integer> assignedPorts = new;
 				for(int p=40; p<45; p++) {
 					assignedPorts.add(p);
 				}
@@ -142,59 +131,7 @@ public class Scheduler implements Runnable{
 				
 				Thread newElevator = new Thread(new SchedulerElevators(upRequests, downRequests, elevatorPort, port, initList));
 				
-			}
-			
-			//else if door closed  
-			else if((byte)elevatorMsg[0] == (byte)2) 
-			{
-				
-				if(elevatorMsg[1] == 0 && !isFloorEmpty(0))  { //parameter for isFloorEmpty will be floor of currentfloor update
-					                                           //sent by elevator every 8 seconds
-				
-					System.out.println("Received doors closed message from elevator and has no pending dest");
-					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-					buffer.write((byte) 0);
-					FloorRequest request = requests.remove(0);    //need to change this to remove current floor index instead of
-					buffer.write((byte) request.floor);
-					buffer.write((byte) request.carButton);
-					
-					byte[] data = buffer.toByteArray();
-					System.out.println("Sent following to elevator: " + Arrays.toString(data));
-					
-					try
-					{
-						DatagramSocket sendElevatorMove = new DatagramSocket();
-						SchedulerElevators selectedElevator = this.elevators.get(0);
-						DatagramPacket elevatorPckt = 
-								new DatagramPacket(data,data.length,
-										InetAddress.getLocalHost(),selectedElevator.portNumber);
-						//DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,packet.getAddress(),packet.getPort());
-						sendElevatorMove.send(elevatorPckt);
-						System.out.println("Sent movement");
-						sendElevatorMove.close();
-					}
-					catch (IOException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			}
-			
-			//else if destination arrival message
-			else if((byte)elevatorMsg[0] == (byte)5) {
-				System.out.println("Received destination arrival message.");
-				System.out.println(elevatorMsg[1]);
-				if(elevatorMsg[1]==0 && isRequestEmpty()) {              
-					System.out.println("Elevator stopped finally");
-				}
-				else
-				{
-					System.out.println("Elevator got to floor " + elevatorMsg[3] + " sending close door");
-					closeDoor();
-				}
-			}
-				
+			}*/
 		}
 	}
 	
@@ -231,113 +168,30 @@ public class Scheduler implements Runnable{
 			{
 				//removing first 0 byte from received packet
 				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
-				
-				isEmpty();
 				//adding new request to front of requests linked list
 				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
-				this.addRequest(r.floor,r);
-
-				SchedulerElevators elevator = this.elevators.get(0);
-				if(this.elevators.get(0).isStationary == 1)
+				if(r.floorButton.equals("up"))
 				{
-					//send close door
-					this.elevators.get(0).isStationary = 0;
-					closeDoor();
+					this.addUpRequest(r);
 				}
-			}
-			 
-				
-		}
-			/*
-			//receiving elevator approaching next floor message every 8 seconds from floor
-			else if(floorMsg[0] == (byte)4)
-			{
-				SchedulerElevators elevator = this.elevators.get(0);
-				System.out.println("Received elevator approaching floor from floor");
-				elevator.currentFloor = elevator.currentFloor+1;
-				
-				//check list for request at that floor
-				FloorRequest re  = new FloorRequest();
-				if(requests.get(elevator.currentFloor).timestamp != null) {
-					ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-					buffer.write((byte) 1);
-					buffer.write((byte) requests.get(elevator.currentFloor).floor);
-					
-					byte[] stopData = buffer.toByteArray();
-					
-					ByteArrayOutputStream request = new ByteArrayOutputStream();
-					request.write((byte) 0);
-					request.write((byte) requests.get(elevator.currentFloor).floor);
-					request.write((byte) requests.get(elevator.currentFloor).carButton);
-					//request.write((byte) requests.get(elevator.currentfloor).carButton);
-					
-					byte[] newRequest = request.toByteArray();
-					
-					try {
-						DatagramSocket sendInterrupt = new DatagramSocket();
-						SchedulerElevators selectedElevator = this.elevators.get(0);
-						DatagramPacket elevatorStopPckt = 
-								new DatagramPacket(stopData,stopData.length,
-										InetAddress.getLocalHost(),selectedElevator.portNumber);
-						DatagramPacket newRequestPckt = 
-								new DatagramPacket(newRequest,newRequest.length,
-										InetAddress.getLocalHost(),selectedElevator.portNumber);
-						sendInterrupt.send(elevatorStopPckt);
-						System.out.println("Sent stop");
-						sendInterrupt.send(newRequestPckt);
-						System.out.println("Sent movement");
-						sendInterrupt.close();
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+				else
+				{
+					this.addDownRequest(r);
 				}
-				
-				else {
-					System.out.println("No requests found on next floor. Elevator can keep moving.");
-					byte[] floorData = new  byte[] {3};
-					DatagramPacket floorPckt = new DatagramPacket(floorData,floorData.length,
-							packet.getAddress(),packet.getPort());
-					try {
-						DatagramSocket noInterrupt = new DatagramSocket();
-						noInterrupt.send(floorPckt);
-						noInterrupt.close();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					try {
-						Thread.sleep(1);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					
-					
-				}
-				
-				
-			}
-			*/
-
+			}	 	
+		}		
 	}
 	
-	/**
-	 * Synchronized method that returns a boolean
-	 * to denote if the floor request array list is 
-	 * empty or not
-	 */
-	public synchronized boolean isFloorEmpty(int index)
+	
+	public void addDownRequest(FloorRequest request)
 	{
-		if(requests.get(index).timestamp==null) {
-			return true;
+		synchronized(this.downRequests)
+		{
+			this.downRequests.set(request.floor,request);
+			this.downRequests.notifyAll();
 		}
-		return false;
 	}
 	
-	public synchronized boolean isRequestEmpty() {
-		return requests.isEmpty();
-	}
 	/**
 	 * Synchronized method that synchronizes the adding
 	 * of floor requests to the array list
@@ -346,31 +200,15 @@ public class Scheduler implements Runnable{
 	 * @param r the floor request received
 	 */
 	
-	public synchronized void addRequest(int index, FloorRequest r)
+	public void addUpRequest(FloorRequest request)
 	{
-		requests.set(index,r);
-	}
-	
-	/**
-	 * Method that sends a door close message each
-	 * time before sending a new move request
-	 */
-	
-	public void closeDoor() {
-		
-		System.out.println("Sending door close message. ");
-		byte[] doorCloseMsg = new byte[] {2};
-		try {
-			DatagramSocket sendDoorClose = new DatagramSocket();
-			SchedulerElevators selectedElevator = this.elevators.get(0);
-			DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, InetAddress.getLocalHost(),selectedElevator.portNumber);
-			sendDoorClose.send(doorClosePkt);
-			System.out.println("Sent door close message. ");
-			sendDoorClose.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+		synchronized(this.upRequests)
+		{
+			this.upRequests.set(request.floor,request);
+			this.upRequests.notifyAll();
 		}
-	}
+	}	
+	
 	
 	/**
 	 * Method starts both the thread listening for floor 
@@ -387,7 +225,7 @@ public class Scheduler implements Runnable{
 	 * of elevators to the array list of elevators
 	 * @param elevator the elevator to be added to the list
 	 */
-	public synchronized void addElevator(SchedulerElevators elevator)
+	public void addElevator(SchedulerElevators elevator)
 	{
 		this.elevators.add(elevator);
 		notifyAll();
@@ -432,7 +270,7 @@ public class Scheduler implements Runnable{
 	 */
 	public static void main(String[] args) {
 
-	    Scheduler s = new Scheduler();
+	    Scheduler s = new Scheduler(2,46);
 	    s.start();
 	    
 	}

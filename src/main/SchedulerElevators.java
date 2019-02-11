@@ -24,7 +24,8 @@ public class SchedulerElevators implements Runnable{
 	DatagramSocket receiveElevatorSocket;
 	DatagramSocket sendElevatorSocket;
 	
-	public SchedulerElevators(List<FloorRequest>up, List<FloorRequest>down, int elevPort, int assignedPort, int initList)
+	public SchedulerElevators(List<FloorRequest>up, List<FloorRequest>down, 
+			int elevPort, int assignedPort, int initList)
 	{
 		this.up = up;
 		this.down = down;
@@ -33,13 +34,28 @@ public class SchedulerElevators implements Runnable{
 		this.initialList = initList;
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(assignedPort);
-			this.sendElevatorSocket = new DatagramSocket(elevPort);
+			this.sendElevatorSocket = new DatagramSocket();
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	public FloorRequest checkUpRequests(int floor)
+	{
+		synchronized(this.up)
+		{
+			for(int i = floor; i >= 0; i--)
+			{
+				FloorRequest req = this.up.get(i);
+				if(req.timestamp != null)
+				{
+					return req;
+				}
+			}
+			return null;
+		}
+	}
 	public FloorRequest checkDownRequests(int floor)
 	{
 		synchronized(this.down)
@@ -169,7 +185,7 @@ public class SchedulerElevators implements Runnable{
 			}
 			
 			FloorRequest req = this.down.get(reqIndex);
-			this.down.set(reqIndex, new FloorRequest());      //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX IN THE LIST	
+			this.down.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX IN THE LIST	
 			return req;
 		}
 	}
@@ -197,6 +213,59 @@ public class SchedulerElevators implements Runnable{
 			System.out.println(Arrays.toString(msg));
 			
 			
+			switch(msg[0])
+			{
+			case 3: //door close
+				if(this.currentRequest != null)
+				{
+					sendRequest();
+				}
+				else
+				{
+					sendMove();
+				}
+				break;
+			
+			case 5: // ready
+				
+				sendMove();
+				break;
+			
+			case 7: //arrival sensor
+				this.updateCurrentFloor();
+				//not special case & direction up
+				if(msg[1] != 1 && msg[2] == 1)
+				{
+					handleUp8s();
+				}
+				//not special case & direction down
+				else if(msg[1] != 1 &&  msg[2] == -1)
+				{
+					handleDown8s();
+				}
+				break;
+			
+			case 9: //stopped
+				sendDoorClose();
+				break;
+			
+			case 10: //arrival message
+				if(msg[3] == 1)
+				{
+					this.handleUpArrival(msg);
+				}
+				else if(msg[3] == -1)
+				{
+					this.handleDownArrival(msg);
+				}
+				sendDoorClose();
+				break;
+			
+			default:
+				break;
+			}
+			
+			/*
 			// 8s notification
 			if(msg[0] == 9)
 			{
@@ -243,7 +312,7 @@ public class SchedulerElevators implements Runnable{
 				 *     wait for door closed 
 				 *      
 				 * }
-				 */
+				 
 				
 			}
 			
@@ -258,7 +327,7 @@ public class SchedulerElevators implements Runnable{
 				 * }
 				 * else
 				 * {sendMove()}
-				 */
+				 
 			}
 			
 			//elevatorReady
@@ -272,16 +341,64 @@ public class SchedulerElevators implements Runnable{
 			else
 			{
 				sendDoorClose();
-			}
+			}*/
 		}
 	}
 	
-	
-	public void waitUp()
+	private void handleDownArrival(byte[] msg)
 	{
-		synchronized(this.up)
+		if(this.currentFloor == 0)
 		{
-			
+			this.currentRequest = this.checkInitialUp(0);
+			return;
+		}
+		
+		switch(msg[1])
+		{
+		case -1:
+			this.currentRequest = this.checkDownRequests(this.currentFloor);
+			if(this.currentRequest == null)
+			{
+				this.currentRequest = this.checkUpRequests(0);
+				
+				if(this.currentRequest == null)
+				{
+					this.checkInitialDown(this.currentFloor);
+				}
+			}
+			break;
+		
+		case 1:
+			this.currentRequest = this.getDownCurrentFloorRequest(this.currentFloor);
+			break;
+		}
+	}
+	
+	private void handleUpArrival(byte[] msg)
+	{
+		if(this.currentFloor == this.topFloor)
+		{
+			this.currentRequest = this.checkInitialDown(this.currentFloor);
+			return;
+		}
+		
+		switch(msg[1])
+		{
+		case -1:
+			this.currentRequest = this.checkUpRequests(this.currentFloor);
+			if(this.currentRequest == null)
+			{
+				this.currentRequest = this.checkDownRequests(this.topFloor);
+				
+				if(this.currentRequest == null)
+				{
+					this.checkInitialUp(this.currentFloor);
+				}
+			}
+			break;
+		case 1:
+			this.currentRequest = this.getUpCurrentFloorRequest(this.currentFloor);
+			break;
 		}
 	}
 	public void handleUp8s()
@@ -327,33 +444,50 @@ public class SchedulerElevators implements Runnable{
 	public void start()
 	{
 
-		//FloorRequest req = initialList == 1 ? checkInitialUp() : checkInitialDown();
-		if(this.initialList==1) {
-			checkInitialUp(0);
-		}
-		else {
-			checkInitialDown(19);
-		}
-		
-		//Send registration confirmation message to elevator
 		sendRegistrationConfirmation();
-		
+		this.currentRequest = initialList == 1 ? checkInitialUp(0) : checkInitialDown(19);
 		//send door close
-		sendDoorClose();
-	
-		//listen for message from elevator
-		
-
-		// get it 
-		//send req
-	
-		
+		sendDoorClose();	
 		// call workerFunction()
 		workerFunction();
-		
-		
 	}
 	
+	
+	private void sendMove()
+	{
+		byte[] msg = new byte[] {6};
+		try
+		{
+			DatagramPacket request = new DatagramPacket(msg,msg.length,
+					InetAddress.getLocalHost(), this.elevPortNumber);
+			this.sendElevatorSocket.send(request);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+	}
+	private void sendRequest()
+	{
+		//[4 - floor - carButton - direction(1 is up -1 is down)
+		byte[] msg = new byte[4];
+		
+		msg[0] = (byte)4;
+		msg[1] = (byte)this.currentRequest.floor;
+		msg[2] = (byte)this.currentRequest.carButton;
+		msg[3] = this.currentRequest.floorButton.equals("up") ? (byte)1 : (byte)-1;
+		try
+		{
+			DatagramPacket request = new DatagramPacket(msg,msg.length,
+					InetAddress.getLocalHost(),this.elevPortNumber);
+			this.sendElevatorSocket.send(request);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 	public void sendRegistrationConfirmation() {
 		
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();

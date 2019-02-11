@@ -10,6 +10,10 @@ import java.sql.Timestamp;
  */
 public class FloorRequest implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public Timestamp timestamp; 		// timestamp of request
 	public int floor, 				// origin of request
 			   carButton; 			// destination of request

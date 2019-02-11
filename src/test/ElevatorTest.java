@@ -238,5 +238,23 @@ public class ElevatorTest {
 			}
 		}
 		
+        byte[] moved = new byte[] {19};
+		
+		try
+		{
+			DatagramPacket doorClosed = new DatagramPacket(moved, moved.length,
+					InetAddress.getLocalHost(), 10);
+			DatagramSocket doorClosedSocket = new DatagramSocket();
+			doorClosedSocket.send(doorClosed);
+			elev.stop();
+			doorClosedSocket.close();
+		} catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+		
+		
+		
 	}
 }

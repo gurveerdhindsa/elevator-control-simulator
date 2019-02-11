@@ -73,7 +73,7 @@ public class Floor implements Runnable {
 				} else if (inputFields[0].equals("Floor Button")) {
 					floorButton = inputFields[1].trim();
 				} else if (input.isEmpty() && timestamp != null && !floorButton.isEmpty()) {
-					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
+					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton.toLowerCase()));
 				}
 			}
 			if (timestamp != null) {
