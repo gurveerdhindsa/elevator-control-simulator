@@ -38,6 +38,7 @@ public class Scheduler implements Runnable{
 		this.upRequests = new ArrayList<>();
 		this.downRequests = new ArrayList<>();
 		this.portNumbers = new ArrayList<>();
+		this.initialRequestList = 1;
 		for(int i = 0; i < numberOfElevators; i++)
 		{
 			this.portNumbers.add(basePortNumber + i);
@@ -166,10 +167,12 @@ public class Scheduler implements Runnable{
 			//proper code should extract floor number and other info
 			if((byte)floorMsg[0] == (byte)0)
 			{
+				System.out.println("Got request msg");
 				//removing first 0 byte from received packet
 				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
 				//adding new request to front of requests linked list
 				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
+				System.out.println(r.floorButton);
 				if(r.floorButton.equals("up"))
 				{
 					this.addUpRequest(r);
@@ -187,6 +190,7 @@ public class Scheduler implements Runnable{
 	{
 		synchronized(this.downRequests)
 		{
+			System.out.println("adding to down request");
 			this.downRequests.set(request.floor,request);
 			this.downRequests.notifyAll();
 		}
@@ -205,6 +209,7 @@ public class Scheduler implements Runnable{
 		synchronized(this.upRequests)
 		{
 			this.upRequests.set(request.floor,request);
+			System.out.println("Added to up list");
 			this.upRequests.notifyAll();
 		}
 	}	

@@ -32,6 +32,8 @@ public class SchedulerElevators implements Runnable{
 		this.elevPortNumber = elevPort;
 		this.assignedPort = assignedPort;
 		this.initialList = initList;
+		this.direction = this.initialList == 1 ? 1 : -1;
+		this.topFloor = 19; // remove hard-coded value
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(assignedPort);
 			this.sendElevatorSocket = new DatagramSocket();
@@ -50,6 +52,7 @@ public class SchedulerElevators implements Runnable{
 				FloorRequest req = this.up.get(i);
 				if(req.timestamp != null)
 				{
+					this.up.set(i, new FloorRequest());
 					return req;
 				}
 			}
@@ -62,9 +65,11 @@ public class SchedulerElevators implements Runnable{
 		{
 			for(int i = floor; i >= 0; i--)
 			{
+				System.out.println("i in down " + i);
 				FloorRequest req = this.down.get(i);
-				if(req.timestamp != null)
+				if(this.down.get(i).timestamp != null)
 				{
+					this.down.set(i, new FloorRequest());
 					return req;
 				}
 			}
@@ -122,6 +127,7 @@ public class SchedulerElevators implements Runnable{
 			while(empty)
 			{
 				try {
+					System.out.println("Waiting on up list");
 					this.up.wait();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -140,6 +146,7 @@ public class SchedulerElevators implements Runnable{
 			}
 			
 			FloorRequest req = this.up.get(reqIndex);
+			System.out.println("Got up request");
 			this.up.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX	IN THE LIST
 			return req;
 		}
@@ -200,7 +207,7 @@ public class SchedulerElevators implements Runnable{
 				
 				
 			try {
-				DatagramPacket packet = new DatagramPacket(msg, msg.length, InetAddress.getLocalHost(), assignedPort);
+				DatagramPacket packet = new DatagramPacket(msg, msg.length);
 				System.out.println("Waiting for message from elevator");
 				this.receiveElevatorSocket.receive(packet);
 			} catch (IOException e) {
@@ -215,31 +222,42 @@ public class SchedulerElevators implements Runnable{
 			
 			switch(msg[0])
 			{
-			case 3: //door close
+			case 3: //door closed
 				if(this.currentRequest != null)
 				{
 					sendRequest();
 				}
 				else
 				{
-					sendMove();
+					msg = new byte[] {11};
+					try
+					{
+						DatagramPacket updateDestination = new DatagramPacket(msg,msg.length,
+								InetAddress.getLocalHost(), this.elevPortNumber);
+						this.sendElevatorSocket.send(updateDestination);
+					}
+					catch(IOException e)
+					{
+						e.printStackTrace();
+					}
+					
 				}
 				break;
 			
 			case 5: // ready
-				
+				this.direction = msg[3];
 				sendMove();
 				break;
 			
 			case 7: //arrival sensor
 				this.updateCurrentFloor();
 				//not special case & direction up
-				if(msg[1] != 1 && msg[2] == 1)
+				if(msg[2] != 1 && msg[1] == 1)
 				{
 					handleUp8s();
 				}
 				//not special case & direction down
-				else if(msg[1] != 1 &&  msg[2] == -1)
+				else if(msg[2] != 1 &&  msg[1] == -1)
 				{
 					handleDown8s();
 				}
@@ -355,7 +373,7 @@ public class SchedulerElevators implements Runnable{
 		
 		switch(msg[1])
 		{
-		case -1:
+		case 0:
 			this.currentRequest = this.checkDownRequests(this.currentFloor);
 			if(this.currentRequest == null)
 			{
@@ -372,6 +390,7 @@ public class SchedulerElevators implements Runnable{
 			this.currentRequest = this.getDownCurrentFloorRequest(this.currentFloor);
 			break;
 		}
+		System.out.println("handled down arrival: " + this.currentRequest);
 	}
 	
 	private void handleUpArrival(byte[] msg)
@@ -384,10 +403,11 @@ public class SchedulerElevators implements Runnable{
 		
 		switch(msg[1])
 		{
-		case -1:
+		case 0:
 			this.currentRequest = this.checkUpRequests(this.currentFloor);
 			if(this.currentRequest == null)
 			{
+				System.out.println("checking down req");
 				this.currentRequest = this.checkDownRequests(this.topFloor);
 				
 				if(this.currentRequest == null)
@@ -403,14 +423,14 @@ public class SchedulerElevators implements Runnable{
 	}
 	public void handleUp8s()
 	{
-		FloorRequest req = null;
-		this.updateCurrentFloor();
+		//this.updateCurrentFloor();
 		if(this.currentFloor != this.destinationFloor)
 		{
-			req = getUpCurrentFloorRequest(this.currentFloor);
+			this.currentRequest = getUpCurrentFloorRequest(this.currentFloor);
 		}
 		
-		if(req != null)
+		System.out.println("updatedfloor: " + this.currentFloor + " req:" + this.currentRequest);
+		if(this.currentRequest != null)
 		{
 			sendStop();	
 		}
@@ -419,14 +439,13 @@ public class SchedulerElevators implements Runnable{
 	
 	public void handleDown8s()
 	{
-		FloorRequest req = null;
-		this.updateCurrentFloor();
+		//this.updateCurrentFloor();
 		if(this.currentFloor != this.destinationFloor)
 		{
-			req = getDownCurrentFloorRequest(this.currentFloor);
+			this.currentRequest = getDownCurrentFloorRequest(this.currentFloor);
 		}
 		
-		if(req != null)
+		if(this.currentRequest != null)
 		{
 			sendStop();
 		}
@@ -440,12 +459,14 @@ public class SchedulerElevators implements Runnable{
 		else {
 		   currentFloor--;
 		}
+		System.out.println("updated current floor " + this.currentFloor);
 	}
 	public void start()
 	{
 
 		sendRegistrationConfirmation();
-		this.currentRequest = initialList == 1 ? checkInitialUp(0) : checkInitialDown(19);
+		//1 up 0 down
+		this.currentRequest = this.initialList == 1 ? checkInitialUp(0) : checkInitialDown(19);
 		//send door close
 		sendDoorClose();	
 		// call workerFunction()
@@ -482,6 +503,7 @@ public class SchedulerElevators implements Runnable{
 			DatagramPacket request = new DatagramPacket(msg,msg.length,
 					InetAddress.getLocalHost(),this.elevPortNumber);
 			this.sendElevatorSocket.send(request);
+			this.currentRequest = null;
 		}
 		catch(IOException e)
 		{
@@ -493,9 +515,19 @@ public class SchedulerElevators implements Runnable{
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 		buffer.write((byte) 1);
 		buffer.write((byte) this.assignedPort);
-		buffer.write((byte) this.direction);
+		buffer.write((byte) this.initialList);
 		byte[] data = buffer.toByteArray();
 		System.out.println("Sent regristration confirmation with followig data: " + Arrays.toString(data));
+		try
+		{
+			DatagramPacket registration = new DatagramPacket(data,data.length,
+					InetAddress.getLocalHost(),this.elevPortNumber);
+			this.sendElevatorSocket.send(registration);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public void sendStop() {
@@ -534,6 +566,7 @@ public class SchedulerElevators implements Runnable{
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
+		this.start();
 		
 	}
 }

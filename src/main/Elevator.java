@@ -120,6 +120,7 @@ public class Elevator implements Runnable{
 	        switch(data[0])
 	        {
 	        case 1:
+	        	System.out.println("Registration confirmed");
 	        	handleRegistrationConfirmed(data);
 	        	break;
 	        
@@ -147,6 +148,11 @@ public class Elevator implements Runnable{
 				handleStop();
 				break;
 			
+	        case 11:
+	        	updateDestination();
+	        	sendReady();
+	        	break;
+	        	
 			default:
 				System.out.println("Got unrecognized message");
 	        }
@@ -197,7 +203,7 @@ public class Elevator implements Runnable{
 	private void handleRegistrationConfirmed(byte[] data)
 	{
 		this.assignedSchedulerPort = data[1];
-		this.direction = data[2];
+		this.direction = data[2] == 1 ? 1 : -1;
 		System.out.println("Registration confirmation received with port: " + this.assignedSchedulerPort
 				+ " and direction " + this.direction);
 	}
@@ -242,6 +248,13 @@ public class Elevator implements Runnable{
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	public void updateDestination()
+	{
+		this.destinationFloor = this.pendingDestinations.removeFirst();
+		this.setDirection();
+		this.sensorCount = Math.abs(this.currentFloor - this.destinationFloor);
 	}
 	
 	/**
@@ -329,8 +342,13 @@ public class Elevator implements Runnable{
 	 */
 	public void sendSensorMsg()
 	{
+		if(Thread.currentThread().isInterrupted())
+		{
+			return;
+		}
 		this.currentFloor = this.direction == 1 ? (this.currentFloor + 1) : (this.currentFloor - 1);
-		byte[] sensorMsg = new byte[] {7, (byte)this.currentFloor, (byte)this.specialCase};
+		byte[] sensorMsg = new byte[] {7, (byte)this.direction, (byte)this.specialCase,
+				(byte)this.currentFloor};
 		try {	
 			DatagramPacket sensorPckt = new DatagramPacket(sensorMsg, sensorMsg.length,
 					InetAddress.getLocalHost(), this.assignedSchedulerPort);
@@ -352,6 +370,7 @@ public class Elevator implements Runnable{
 		System.out.println("SensorThread");
 		while(this.sensorCount > 0)
 		{
+			System.out.println("SensorCount: " + this.sensorCount);
 			try {
 				Thread.sleep(2000);
 				sendSensorMsg();
@@ -359,7 +378,9 @@ public class Elevator implements Runnable{
 				Thread.sleep(500);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				//e.printStackTrace();
+				System.out.println("Interrupted sensor");
+				break;
 			}
 		}
 		
@@ -383,7 +404,7 @@ public class Elevator implements Runnable{
 			//that was updated when the move request was received
 			//so we update current floor as that floor
 			//send packet to scheduler elevator has arrived
-			int anyPendingDest = this.pendingDestinations.isEmpty() ? 1 : 0;
+			int anyPendingDest = this.pendingDestinations.isEmpty() ? 0 : 1;
 			int destination = anyPendingDest == 1 ? this.pendingDestinations.peekFirst() : -1;
 			byte[] arrivalMessage = new byte[5];   //byte 5 is used to represent arrival to destination
 			arrivalMessage[0] = 10;
@@ -408,9 +429,9 @@ public class Elevator implements Runnable{
 			e.printStackTrace();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-			Throwable  s = e.getCause();
-			System.out.println(s);
+			//e.printStackTrace();
+			//Throwable  s = e.getCause();
+			//System.out.println(s);
 			System.out.printf("Elevator stopped at floor %d to answer request\n",currentFloor);			
 		}
 		

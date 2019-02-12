@@ -9,6 +9,16 @@ Floor Button:Up
 Car Button:7
 
 Time:14:05:15.0
-Floor:7
+Floor:4
 Floor Button:Down
-Car Button:2
+Car Button:0
+
+Time:14:05:15.0
+Floor:9
+Floor Button:Up
+Car Button:12
+
+Time:14:05:15.0
+Floor:10
+Floor Button:Down
+Car Button:5

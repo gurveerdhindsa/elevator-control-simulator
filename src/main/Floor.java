@@ -72,8 +72,9 @@ public class Floor implements Runnable {
 					carButton = Integer.parseInt(inputFields[1]);
 				} else if (inputFields[0].equals("Floor Button")) {
 					floorButton = inputFields[1].trim();
+					floorButton = floorButton.toLowerCase();
 				} else if (input.isEmpty() && timestamp != null && !floorButton.isEmpty()) {
-					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton.toLowerCase()));
+					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton));
 				}
 			}
 			if (timestamp != null) {
@@ -111,7 +112,7 @@ public class Floor implements Runnable {
 
 				sendReceiveSocket.send(packet);
 				try {
-					Thread.sleep(8000);
+					Thread.sleep(1700);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
