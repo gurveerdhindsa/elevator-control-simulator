@@ -109,11 +109,10 @@ public class Elevator implements Runnable{
 		    // Block until a datagram packet is received from receiveSocket.
 	        try {
 	        		System.out.printf("Elevator waiting for movement request\n");
-	        		this.receiveSckt.receive(receivePckt);
-	        		
+	        		this.receiveSckt.receive(receivePckt);	
 	        } catch(IOException e) {
 	        	System.out.print("IO Exception: likely:");
-	            e.printStackTrace();
+	            //e.printStackTrace();
 	            continue;
 	        }
 	        
@@ -270,7 +269,6 @@ public class Elevator implements Runnable{
 			this.destinationFloor = data[1];
 			this.addPendingDest(data[2]);
 			this.firstRequest = false;
-			this.specialCase = this.direction == data[3] ? this.specialCase : (this.specialCase | 0x00000001);
 		}
 		
 		else if(direction == 1)
@@ -286,6 +284,7 @@ public class Elevator implements Runnable{
 		
 		this.setDirection();
 		this.sensorCount = Math.abs(this.currentFloor - this.destinationFloor);
+		this.specialCase = this.direction == data[3] ? this.specialCase : (this.specialCase | 0x00000001);
 		sendReady();
 	}
 	
@@ -462,6 +461,7 @@ public class Elevator implements Runnable{
 	public void stop()
 	{
 		this.messageThread.interrupt();
+		this.receiveSckt.close();
 	}
 	
 	/**
@@ -472,5 +472,9 @@ public class Elevator implements Runnable{
 	{
 		Elevator e = new Elevator(70);
 		e.start();
+		
+		
+		Elevator e1 = new Elevator(71);
+		e1.start();
 	}
 }

@@ -209,7 +209,7 @@ public class Scheduler implements Runnable{
 		synchronized(this.upRequests)
 		{
 			this.upRequests.set(request.floor,request);
-			System.out.println("Added to up list");
+			System.out.println("Added to up list floor request with floor " + request.floor);
 			this.upRequests.notifyAll();
 		}
 	}	

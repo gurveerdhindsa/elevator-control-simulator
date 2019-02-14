@@ -2,6 +2,7 @@ package test;
 
 import static org.junit.Assert.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -24,18 +25,41 @@ public class ElevatorTest {
 	 * sends its information such as port number to the 
 	 * Scheduler on port 69 
 	 */
-	/*@Test 
+	
+	private Elevator elev;
+	@Before
+	public void setUp()
+	{
+		elev = new Elevator(10);
+	}
+	
+	@After
+	public void cleanUp()
+	{
+		/*
+		byte invalidMsg[] = new byte[] {23};
+		
+		try
+		{
+			DatagramPacket invalidPckt = new DatagramPacket(invalidMsg,invalidMsg.length,
+					InetAddress.getLocalHost(),10);
+			DatagramSocket socket = new DatagramSocket();
+			socket.send(invalidPckt);
+			this.elev.stop();
+			socket.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}*/
+		this.elev.stop();
+	}
+	
+	@Test 
 	public void testRegistration()
 	{
-		Thread elevThread = new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				Elevator elev = new Elevator(33);
-				elev.run();
-			}
-		});
+		
+		Thread elevThread = new Thread(elev);
 		
 		byte[] regist = new byte[50];
 		
@@ -57,7 +81,7 @@ public class ElevatorTest {
 		//contains the correct message identifier - 0 
 		//and the correct number - 33
 		assertTrue((int)regist[0] == 0);
-		assertTrue((int)regist[4] == 33);
+		assertTrue((int)regist[4] == 10);
 		
 	}
 	
@@ -70,19 +94,14 @@ public class ElevatorTest {
 	 * floor
 	 */
 	
-	/*@Test
+	@Test
 	public void testReceiveRequest()
 	{
 		//In order that Junit Thread 
 		//can operate simulatenously with the Threads 
 		// of the System under test. 
-		Elevator elev = new Elevator(10);
 		elev.start();
-		//mimicking the scheduler sending a message with 
-		// Msg Id = 0 - signifies a floor request
-		// floorNumber = 2 - signifies which floor the request is coming from
-		// CarButton = 5 - signifies which floor the passenger wants to gets off
-		byte[] request = new byte[] {0, 2, 5, 0};
+		byte[] request = new byte[] {1, 46, 0 , 0};
 		try {
 			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
 					InetAddress.getLocalHost(),10);
@@ -94,36 +113,12 @@ public class ElevatorTest {
 			fail("Did not send ");
 			e.printStackTrace();
 		} 
-		
-		//mimic a scheduler waiting to receive an elevator has 
-		//arrived at some destination and whether its stopped 
-		//completely or continuing on to a pending destination
-		byte[] arrival = new byte[50];
-		try {
-			Thread.sleep(19500);
-			
-			DatagramSocket getArrival = new DatagramSocket(69);
-			
-			DatagramPacket pck = new DatagramPacket(arrival,arrival.length);
-			getArrival.receive(pck);
-			getArrival.close();	
-		} catch (InterruptedException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		//validations
-		assertTrue((int)arrival[0] == 5); //correct Msg Id for Elevator arrival
-		assertTrue((int)arrival[1] == 1); //Does this elevator have a pending 
-		                                  //destination after arriving at current floor
-		assertTrue((int)arrival[2] == 5); //floor number that is elevator is currently moving to
-		assertTrue((int)arrival[3] == 2); // current floor of this elevator
-		
 	}
 
 	/**
 	 * 
 	 */
+	/*
 	@Test
 	public void testSendDoorCloseMsg()
 	{
@@ -256,5 +251,5 @@ public class ElevatorTest {
 		
 		
 		
-	}
+	}*/
 }
