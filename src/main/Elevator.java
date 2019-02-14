@@ -147,7 +147,7 @@ public class Elevator implements Runnable{
 				handleStop();
 				break;
 			
-	        case 11:
+	        case 11: //update pending destination
 	        	updateDestination();
 	        	sendReady();
 	        	break;

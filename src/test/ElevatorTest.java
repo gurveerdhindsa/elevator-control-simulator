@@ -36,22 +36,6 @@ public class ElevatorTest {
 	@After
 	public void cleanUp()
 	{
-		/*
-		byte invalidMsg[] = new byte[] {23};
-		
-		try
-		{
-			DatagramPacket invalidPckt = new DatagramPacket(invalidMsg,invalidMsg.length,
-					InetAddress.getLocalHost(),10);
-			DatagramSocket socket = new DatagramSocket();
-			socket.send(invalidPckt);
-			this.elev.stop();
-			socket.close();
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}*/
 		this.elev.stop();
 	}
 	
@@ -79,7 +63,7 @@ public class ElevatorTest {
 		
 		//verify that the message being sent 
 		//contains the correct message identifier - 0 
-		//and the correct number - 33
+		//and the correct number -10
 		assertTrue((int)regist[0] == 0);
 		assertTrue((int)regist[4] == 10);
 		
@@ -97,11 +81,13 @@ public class ElevatorTest {
 	@Test
 	public void testReceiveRequest()
 	{
-		//In order that Junit Thread 
-		//can operate simulatenously with the Threads 
-		// of the System under test. 
-		elev.start();
-		byte[] request = new byte[] {1, 46, 0 , 0};
+		Thread elevThread = new Thread(this.elev);
+		
+		//make elevator start listening
+		elevThread.start();
+		
+		//send a registrationConfirmation msg
+		byte[] request = new byte[] {1, 46, 0};
 		try {
 			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
 					InetAddress.getLocalHost(),10);
@@ -112,7 +98,17 @@ public class ElevatorTest {
 			// TODO Auto-generated catch block
 			fail("Did not send ");
 			e.printStackTrace();
-		} 
+		}
+		
+		//validate elevator state 
+		
+		
+		//make up a request 
+		//send fake request {4, 8, 3, -1}
+		
+		//listen for ready 
+		// when you get ready assert that info is correct
+		// veriy data[2] == 8, data[3] == 1(up to answer down req) 
 	}
 
 	/**
