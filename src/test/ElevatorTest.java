@@ -88,6 +88,25 @@ public class ElevatorTest {
 		}
 	}
 	
+	public void sendMove() {
+		//mimic sending of move message from scheduler to elevator
+		byte[] elevMoveMsg = new byte[] {6};
+		try
+		{
+			DatagramSocket elevMoveSckt = new DatagramSocket(46);
+			DatagramPacket elevMovePckt = new DatagramPacket(elevMoveMsg,elevMoveMsg.length,
+					InetAddress.getLocalHost(), 10);
+			elevMoveSckt.send(elevMovePckt);
+			System.out.println(Thread.currentThread().getName() + 
+					" Sent move");
+			elevMoveSckt.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Tests the functionality of an elevator 
 	 * recieving a request with floor number 
@@ -156,7 +175,7 @@ public class ElevatorTest {
 	}
 	
 
-	/*
+	
 	@Test
 	public void testDoorCloseMsg()
 	{
@@ -241,28 +260,14 @@ public class ElevatorTest {
 		assertTrue(this.elev.isSensorInterrupted()==true);
 	}
 	
+	
 	@Test
 	public void testElevatorMove()
 	{
 		Thread elevThread = new Thread(elev);
 		elevThread.start();
 		
-		//mimic sending of move message from scheduler to elevator
-		byte[] elevMoveMsg = new byte[] {6};
-		try
-		{
-			DatagramSocket elevMoveSckt = new DatagramSocket(46);
-			DatagramPacket elevMovePckt = new DatagramPacket(elevMoveMsg,elevMoveMsg.length,
-					InetAddress.getLocalHost(), 10);
-			elevMoveSckt.send(elevMovePckt);
-			System.out.println(Thread.currentThread().getName() + 
-					" Sent move");
-			elevMoveSckt.close();
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}
+		this.sendMove();
 		
 		//verify that elevator is moving
 		//assertTrue that elevator motorThread and sensorThread is not interrupted
@@ -270,8 +275,56 @@ public class ElevatorTest {
 		assertTrue(this.elev.isSensorInterrupted()==false);
 		
 	}
+	
+	@Test
+	public void testSensorMsg()
+	{
+		
+		//EXAMPLE: move request {4, 8, 3, -1}
+		this.sendRequest();
+		
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		this.sendMove();
+		
+		int floordiff = 8;
+		int initialFloor = 0;
+		
+		while(floordiff>0) {
+			
+			//this message is received every two seconds when elevator approaches a floor
+			byte[] sensorMsg = new byte[100]; 
+			try {
+				DatagramSocket sensorMsgSckt = new DatagramSocket(46);
+				DatagramPacket sensorMsgPckt = new DatagramPacket(sensorMsg, sensorMsg.length);
+				System.out.println("Scheduler " + Thread.currentThread().getName() + 
+						" Waiting for message from elevator on Port " + this.elev.getAssignedPort());
+				sensorMsgSckt.receive(sensorMsgPckt);
+				sensorMsgSckt.close();
+			}
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				//e.printStackTrace();
+			} 
+			
+			initialFloor++;
+			assertTrue(sensorMsg[0]==7);
+			assertTrue(this.elev.getDirection()==1);
+			assertTrue(this.elev.getCurrentFloor()==initialFloor);
+			assertTrue(sensorMsg[2]==1);
+			
+		}
+			
+		}
+		
+	}
 
-
+    /*
 	@Test
 	public void testSendDoorCloseMsg()
 	{
@@ -405,4 +458,4 @@ public class ElevatorTest {
 		
 		
 	}*/
-}
+

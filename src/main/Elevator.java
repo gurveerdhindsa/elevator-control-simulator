@@ -463,10 +463,10 @@ public class Elevator implements Runnable{
 		this.receiveSckt.close();
 	}
 	
-	public int getDirection() {
+	public synchronized int getDirection() {
 		return this.direction;
 	}
-	public int getCurrentFloor() {
+	public synchronized int getCurrentFloor() {
 		return this.currentFloor;
 	}
 	public int getDestinationFloor() {
