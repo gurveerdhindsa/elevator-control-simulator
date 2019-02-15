@@ -110,9 +110,9 @@ public class Elevator implements Runnable{
 	        		System.out.printf("Elevator waiting for movement request\n");
 	        		this.receiveSckt.receive(receivePckt);	
 	        } catch(IOException e) {
-	        	System.out.print("IO Exception: likely:");
+	        	//System.out.print("IO Exception: likely:");
 	            //e.printStackTrace();
-	            continue;
+	            break;
 	        }
 	        
 	        switch(data[0])

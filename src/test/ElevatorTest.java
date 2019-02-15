@@ -69,6 +69,25 @@ public class ElevatorTest {
 		
 	}
 	
+	public void sendRequest()
+	{
+		//make up a request 
+		byte[] newRequest = new byte[] {4, 8, 3, -1}; 
+		
+		//send fake request {4, 8, 3, -1}
+		try {
+			DatagramPacket requestPckt = new DatagramPacket(newRequest,newRequest.length,
+					InetAddress.getLocalHost(),10);
+			DatagramSocket sendRequest = new DatagramSocket();
+			sendRequest.send(requestPckt);
+			sendRequest.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			fail("Did not send ");
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * Tests the functionality of an elevator 
 	 * recieving a request with floor number 
@@ -100,27 +119,17 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 		
-		//validate elevator state for confirmation received 
-		assertTrue(this.elev.getAssignedPort()==46);
-		assertTrue(this.elev.getDirection()==-1);    //this elevator will initially take requests from downRequests list
-		
-		
-		//make up a request 
-		byte[] newRequest = new byte[] {4, 8, 3, -1}; 
-		
-		//send fake request {4, 8, 3, -1}
 		try {
-			DatagramPacket requestPckt = new DatagramPacket(newRequest,newRequest.length,
-					InetAddress.getLocalHost(),10);
-			DatagramSocket sendRequest = new DatagramSocket();
-			sendRequest.send(requestPckt);
-			sendRequest.close();
-		} catch (IOException e) {
+			Thread.sleep(400);
+		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block
-			fail("Did not send ");
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
-
+		//validate elevator state for confirmation received 
+		assertTrue(this.elev.getAssignedPort()== 46);
+		assertTrue(this.elev.getDirection() == -1);    //this elevator will initially take requests from downRequests list
+		
+		this.sendRequest();
 		
 		//listen for ready 
 		byte[] readyMsg = new byte[100]; 
@@ -140,12 +149,14 @@ public class ElevatorTest {
 		
 		// when you get ready assert that info is correct
 		// verify data[1]==19, data[2] == 8, data[3] == 1(up to answer down req)
-		assertTrue(this.elev.getCurrentFloor()==19);
-		assertTrue(this.elev.getDestinationFloor()==8);
-		assertTrue(this.elev.getDirection()==-1);
+		assertTrue(this.elev.getCurrentFloor()== 0);
+		assertTrue(this.elev.getDestinationFloor()== 8);
+		assertTrue(this.elev.getDirection()== 1);
 		
 	}
 	
+
+	/*
 	@Test
 	public void testDoorCloseMsg()
 	{
@@ -260,10 +271,7 @@ public class ElevatorTest {
 		
 	}
 
-	/**
-	 * 
-	 */
-	/*
+
 	@Test
 	public void testSendDoorCloseMsg()
 	{
