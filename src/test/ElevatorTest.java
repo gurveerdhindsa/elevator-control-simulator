@@ -145,6 +145,120 @@ public class ElevatorTest {
 		assertTrue(this.elev.getDirection()==-1);
 		
 	}
+	
+	@Test
+	public void testDoorCloseMsg()
+	{
+		Thread elevThread = new Thread(elev);
+		elevThread.start();
+		
+		//mimic sending door close from scheduler side
+		byte[] doorCloseMsg = new byte[] {2};
+		try {
+			DatagramPacket doorClosePckt = new DatagramPacket(doorCloseMsg,doorCloseMsg.length,
+					InetAddress.getLocalHost(),10);
+			DatagramSocket doorCloseSocket = new DatagramSocket();
+			doorCloseSocket.send(doorClosePckt);
+			doorCloseSocket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			fail("Did not send ");
+			e.printStackTrace();
+		} 
+		
+		//sending confirmation of door closed from elevator to scheduler
+		byte[] doorClosedConfirmation = new byte[100]; 
+		try {
+			DatagramSocket doorCloseConfirmationSckt = new DatagramSocket(46);
+			DatagramPacket doorCloseConfirmationPckt = new DatagramPacket(doorClosedConfirmation, doorClosedConfirmation.length);
+			System.out.println("Scheduler " + Thread.currentThread().getName() + 
+					" Waiting for message from elevator on Port " + this.elev.getAssignedPort());
+			doorCloseConfirmationSckt.receive(doorCloseConfirmationPckt);
+			doorCloseConfirmationSckt.close();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+		} 
+		
+		//verify elevator door is closed
+		assertTrue(this.elev.getDoorsOpen()==false);
+	}
+	
+	@Test
+	public void testElevatorStopped()
+	{
+		
+		Thread elevThread = new Thread(elev);
+		elevThread.start();
+		
+		
+		//mimic sending of stop message from scheduler to elevator
+		byte[] stopData = new byte[] {8};
+		
+		try {
+			DatagramSocket elevatorStopSckt = new DatagramSocket(46);
+			DatagramPacket elevatorStopPckt = new DatagramPacket(stopData, stopData.length, InetAddress.getLocalHost(),10);
+			elevatorStopSckt.send(elevatorStopPckt);
+			System.out.println(Thread.currentThread().getName() + 
+					" Sent stop");
+			elevatorStopSckt.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		//sending confirmation of elevator stopped from elevator to scheduler
+		byte[] elevatorStoppedConfirmation = new byte[100]; 
+		try {
+			DatagramSocket elevStoppedConfirmationSckt = new DatagramSocket(46);
+			DatagramPacket elevStoppedConfirmationPckt = new DatagramPacket(elevatorStoppedConfirmation, elevatorStoppedConfirmation.length);
+			System.out.println("Scheduler " + Thread.currentThread().getName() + 
+					" Waiting for message from elevator on Port " + this.elev.getAssignedPort());
+			elevStoppedConfirmationSckt.receive(elevStoppedConfirmationPckt);
+			elevStoppedConfirmationSckt.close();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+		} 
+		
+		//verify that elevator is stopped
+		//assertTrue that elevator motorThread and sensorThread is interrupted
+		assertTrue(this.elev.isMotorInterrupted()==true);
+		assertTrue(this.elev.isSensorInterrupted()==true);
+	}
+	
+	@Test
+	public void testElevatorMove()
+	{
+		Thread elevThread = new Thread(elev);
+		elevThread.start();
+		
+		//mimic sending of move message from scheduler to elevator
+		byte[] elevMoveMsg = new byte[] {6};
+		try
+		{
+			DatagramSocket elevMoveSckt = new DatagramSocket(46);
+			DatagramPacket elevMovePckt = new DatagramPacket(elevMoveMsg,elevMoveMsg.length,
+					InetAddress.getLocalHost(), 10);
+			elevMoveSckt.send(elevMovePckt);
+			System.out.println(Thread.currentThread().getName() + 
+					" Sent move");
+			elevMoveSckt.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		//verify that elevator is moving
+		//assertTrue that elevator motorThread and sensorThread is not interrupted
+		assertTrue(this.elev.isMotorInterrupted()==false);
+		assertTrue(this.elev.isSensorInterrupted()==false);
+		
+	}
 
 	/**
 	 * 

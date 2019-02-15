@@ -478,7 +478,15 @@ public class Elevator implements Runnable{
 	public int getAssignedPort() {
 		return this.assignedSchedulerPort;
 	}
-	
+	public boolean getDoorsOpen() {
+		return this.doorsOpen;
+	}
+	public boolean isMotorInterrupted() {
+        return this.motorThread.isInterrupted();   //returns true is motorThread is interrupted
+    }
+	public boolean isSensorInterrupted() {
+        return this.sensorThread.isInterrupted();   //returns true is sensorThread is interrupted
+    }
 	/**
 	 * 
 	 * @param args
