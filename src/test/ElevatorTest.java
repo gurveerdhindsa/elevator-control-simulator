@@ -87,28 +87,63 @@ public class ElevatorTest {
 		elevThread.start();
 		
 		//send a registrationConfirmation msg
-		byte[] request = new byte[] {1, 46, 0};
+		byte[] confirmation = new byte[] {1, 46, 0};
 		try {
-			DatagramPacket requestPckt = new DatagramPacket(request,request.length,
+			DatagramPacket confirmationPckt = new DatagramPacket(confirmation,confirmation.length,
 					InetAddress.getLocalHost(),10);
-			DatagramSocket sendReq = new DatagramSocket();
-			sendReq.send(requestPckt);
-			sendReq.close();
+			DatagramSocket sendConfirm = new DatagramSocket();
+			sendConfirm.send(confirmationPckt);
+			sendConfirm.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			fail("Did not send ");
 			e.printStackTrace();
 		}
 		
-		//validate elevator state 
+		//validate elevator state for confirmation received 
+		assertTrue(this.elev.getAssignedPort()==46);
+		assertTrue(this.elev.getDirection()==-1);    //this elevator will initially take requests from downRequests list
 		
 		
 		//make up a request 
+		byte[] newRequest = new byte[] {4, 8, 3, -1}; 
+		
 		//send fake request {4, 8, 3, -1}
+		try {
+			DatagramPacket requestPckt = new DatagramPacket(newRequest,newRequest.length,
+					InetAddress.getLocalHost(),10);
+			DatagramSocket sendRequest = new DatagramSocket();
+			sendRequest.send(requestPckt);
+			sendRequest.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			fail("Did not send ");
+			e.printStackTrace();
+		}
+
 		
 		//listen for ready 
+		byte[] readyMsg = new byte[100]; 
+		try {
+			DatagramSocket readySckt = new DatagramSocket(46);
+			DatagramPacket readyPckt = new DatagramPacket(readyMsg, readyMsg.length);
+			System.out.println("Scheduler " + Thread.currentThread().getName() + 
+					" Waiting for message from elevator on Port " + this.elev.getAssignedPort());
+			readySckt.receive(readyPckt);
+			readySckt.close();
+		}
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+		} 
+		
+		
 		// when you get ready assert that info is correct
-		// veriy data[2] == 8, data[3] == 1(up to answer down req) 
+		// verify data[1]==19, data[2] == 8, data[3] == 1(up to answer down req)
+		assertTrue(this.elev.getCurrentFloor()==19);
+		assertTrue(this.elev.getDestinationFloor()==8);
+		assertTrue(this.elev.getDirection()==-1);
+		
 	}
 
 	/**

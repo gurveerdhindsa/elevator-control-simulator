@@ -30,7 +30,6 @@ public class Elevator implements Runnable{
 	private int sensorCount, //sensorCount how many times to do 8s notification
 	                    specialCase; //special movement with no 8s notification
 	                                     
-
 	
 	/**
 	 * Constructor for an Elevator
@@ -462,6 +461,22 @@ public class Elevator implements Runnable{
 	{
 		this.messageThread.interrupt();
 		this.receiveSckt.close();
+	}
+	
+	public int getDirection() {
+		return this.direction;
+	}
+	public int getCurrentFloor() {
+		return this.currentFloor;
+	}
+	public int getDestinationFloor() {
+		return this.destinationFloor;
+	}
+	public int getPort() {
+		return this.portNumber;
+	}
+	public int getAssignedPort() {
+		return this.assignedSchedulerPort;
 	}
 	
 	/**
