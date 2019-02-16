@@ -11,18 +11,18 @@ import java.util.List;
 
 public class SchedulerElevators implements Runnable{
 	
-	int currentFloor;
-	int destinationFloor;
-	int assignedPort;
-	int elevPortNumber;
-	int initialList;
-	List<FloorRequest> up;
-	List<FloorRequest> down;
-	FloorRequest currentRequest;
-	int topFloor;
-	int direction; // 1 is up -1 is down
-	DatagramSocket receiveElevatorSocket;
-	DatagramSocket sendElevatorSocket;
+	private int currentFloor;
+	private int destinationFloor;
+	private int assignedPort;
+	private int elevPortNumber;
+	private int initialList;
+	private List<FloorRequest> up;
+	private List<FloorRequest> down;
+	private FloorRequest currentRequest;
+	private int topFloor;
+	private int direction; // 1 is up -1 is down
+	private DatagramSocket receiveElevatorSocket;
+	private DatagramSocket sendElevatorSocket;
 	
 	public SchedulerElevators(List<FloorRequest>up, List<FloorRequest>down, 
 			int elevPort, int assignedPort, int initList)
@@ -65,8 +65,6 @@ public class SchedulerElevators implements Runnable{
 		{
 			for(int i = floor; i >= 0; i--)
 			{
-				System.out.println("Scheduler: " + Thread.currentThread().getName() + 
-						"i in down " + i);
 				FloorRequest req = this.down.get(i);
 				if(this.down.get(i).timestamp != null)
 				{
@@ -177,12 +175,10 @@ public class SchedulerElevators implements Runnable{
 			while(empty)
 			{
 				try {
-					System.out.println("Scheduler: " + Thread.currentThread().getName() + 
-							" waiting on down");
 					this.down.wait();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					break;
 				}
 				
 				for(int i = floor; i >= 0; i--)
@@ -196,10 +192,9 @@ public class SchedulerElevators implements Runnable{
 				
 			}
 			
-			System.out.println("Scheduler: " + Thread.currentThread().getName() + 
-					" got down req");
 			FloorRequest req = this.down.get(reqIndex);
-			this.down.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX IN THE LIST	
+			this.down.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT 
+			                                             //TO REMOVE A REQUEST FROM AN INDEX IN THE LIST	
 			return req;
 		}
 	}
@@ -210,25 +205,17 @@ public class SchedulerElevators implements Runnable{
 		while(true)
 		{
 			byte[] msg = new byte[100];
-			//listen for elevator message
-				
-				
+			//listen for elevator message	
 			try {
 				DatagramPacket packet = new DatagramPacket(msg, msg.length);
-				System.out.println("Schedyler " + Thread.currentThread().getName() + 
-						" Waiting for message from elevator on Port " + this.assignedPort);
 				this.receiveElevatorSocket.receive(packet);
 			}
 			catch (IOException e) {
 				// TODO Auto-generated catch block
 				//e.printStackTrace();
+				System.out.println("closing");
 				break; //@TODO get rid of and do better handling
 			} 
-			
-			System.out.println("Scheduler: " + Thread.currentThread().getName() + "Elevator message received for register elevator on port "
-					+ this.elevPortNumber);
-			System.out.println(Arrays.toString(msg));
-			
 			
 			switch(msg[0])
 			{
@@ -454,8 +441,7 @@ public class SchedulerElevators implements Runnable{
 		buffer.write((byte) this.assignedPort);
 		buffer.write((byte) this.initialList);
 		byte[] data = buffer.toByteArray();
-		System.out.println(Thread.currentThread().getName()
-				+ " Sent regristration confirmation with followig data: " + Arrays.toString(data));
+		//System.out.println("Scheduler: sending confrimation to Elevator with port:" + this.elevPortNumber);
 		try
 		{
 			DatagramPacket registration = new DatagramPacket(data,data.length,
@@ -473,12 +459,11 @@ public class SchedulerElevators implements Runnable{
 		byte[] stopData = new byte[] {8};
 		
 		try {
-			//DatagramSocket sendInterrupt = new DatagramSocket();
-			DatagramPacket elevatorStopPckt = new DatagramPacket(stopData, stopData.length, InetAddress.getLocalHost(),elevPortNumber);
-			sendElevatorSocket.send(elevatorStopPckt);
+			DatagramPacket elevatorStopPckt = new DatagramPacket(stopData, stopData.length, 
+					InetAddress.getLocalHost(),this.elevPortNumber);
+			this.sendElevatorSocket.send(elevatorStopPckt);
 			System.out.println(Thread.currentThread().getName() + 
 					" Sent stop");
-			//sendElevatorSocket.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -488,13 +473,11 @@ public class SchedulerElevators implements Runnable{
 	
 	public void sendDoorClose()
 	{
-		System.out.println(Thread.currentThread().getName() + " Sending door close message. ");
 		byte[] doorCloseMsg = new byte[] {2};
 		try {
 			DatagramSocket sendDoorClose = new DatagramSocket();
 			DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, InetAddress.getLocalHost(),elevPortNumber);
 			sendDoorClose.send(doorClosePkt);
-			System.out.println(Thread.currentThread().getName() + " Sent door close message. ");
 			sendDoorClose.close();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -506,6 +489,12 @@ public class SchedulerElevators implements Runnable{
 	public void run() {
 		// TODO Auto-generated method stub
 		this.start();
+		
+	}
+	
+	public void stop()
+	{
+		this.sendElevatorSocket.close();
 		
 	}
 }

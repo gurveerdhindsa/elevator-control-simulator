@@ -39,16 +39,17 @@ public class Scheduler implements Runnable{
 		this.downRequests = new ArrayList<>();
 		this.portNumbers = new ArrayList<>();
 		this.initialRequestList = 1;
+		
 		for(int i = 0; i < numberOfElevators; i++)
 		{
 			this.portNumbers.add(basePortNumber + i);
 		}
-		for (int i=0; i<20; i++) {
+		
+		for (int i = 0; i < 20; i++) {
 		    upRequests.add(i, new FloorRequest());
-		}
-		for (int i=0; i<20; i++) {
 		    downRequests.add(i, new FloorRequest());
 		}
+		
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(69);
 			this.receiveFloorSocket = new DatagramSocket(45);
@@ -275,7 +276,7 @@ public class Scheduler implements Runnable{
 	 */
 	public static void main(String[] args) {
 
-	    Scheduler s = new Scheduler(2,46);
+	    Scheduler s = new Scheduler(4,46);
 	    s.start();
 	    
 	}

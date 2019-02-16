@@ -29,6 +29,7 @@ public class Elevator implements Runnable{
 	private boolean firstRequest, doorsOpen;   //false = door closed ;
 	private int sensorCount, //sensorCount how many times to do 8s notification
 	                    specialCase; //special movement with no 8s notification
+	private String name;
 	                                     
 	
 	/**
@@ -107,10 +108,8 @@ public class Elevator implements Runnable{
 		    DatagramPacket receivePckt = new DatagramPacket(data, data.length);
 		    // Block until a datagram packet is received from receiveSocket.
 	        try {
-	        		System.out.printf("Elevator waiting for movement request\n");
 	        		this.receiveSckt.receive(receivePckt);	
 	        } catch(IOException e) {
-	        	//System.out.print("IO Exception: likely:");
 	            //e.printStackTrace();
 	            break;
 	        }
@@ -118,7 +117,6 @@ public class Elevator implements Runnable{
 	        switch(data[0])
 	        {
 	        case 1:
-	        	System.out.println("Registration confirmed");
 	        	handleRegistrationConfirmed(data);
 	        	break;
 	        
@@ -128,15 +126,14 @@ public class Elevator implements Runnable{
 	        
 	        case 4:
 	        	//Message received format: [4 - floor - carButton - direction(1 is up -1 is down)
-				System.out.println("Received request with contents:");
-				System.out.println(Arrays.toString(data));
 				handleRequest(data);
 				break;
 			
 	        case 6:
-	        	System.out.println("Got move");
 				this.motorThread = new Thread(this, "motorThread");
 				this.sensorThread = new Thread(this, "sensorThread");
+				System.out.println("Elevator with port:" + this.portNumber + " moving from:"
+						+ this.currentFloor + " to:" + this.destinationFloor);
 				this.sensorThread.start();
 				this.motorThread.start();
 				break;
@@ -154,42 +151,7 @@ public class Elevator implements Runnable{
 			default:
 				System.out.println("Got unrecognized message");
 	        }
-	        /*
-	        //registration confirmed
-			if(data[0] == (byte)1)
-			{
-				handleRegistrationConfirmed(data);
-			}
-			
-			else if(data[0] == (byte)2) //closedoor
-			{
-				//close door and send door closed
-					 
-			}
-			//floor request
-			else if(data[0]==(byte)4) 
-			{
-				//Message received format: [4 - floor - carButton - direction(1 is up -1 is down)
-				System.out.println("Received request with contents:");
-				System.out.println(Arrays.toString(data));
-				handleRequest(data);
-			}
-			//move
-			else if(data[0] == 6)
-			{
-				System.out.println("Got move");
-				this.motorThread = new Thread(this, "motorThread");
-				this.sensorThread = new Thread(this, "sensorThread");
-				this.sensorThread.start();
-				this.motorThread.start();
-				
-			}
-			else if(data[0] == 8)
-			{
-				//just stop motorThread and sensor thread
-				handleStop();
-			}*/
-
+	        
 		}
 		
 	}
@@ -202,8 +164,9 @@ public class Elevator implements Runnable{
 	{
 		this.assignedSchedulerPort = data[1];
 		this.direction = data[2] == 1 ? 1 : -1;
-		System.out.println("Registration confirmation received with port: " + this.assignedSchedulerPort
-				+ " and direction " + this.direction);
+		System.out.println("Elevator with port:" + this.portNumber
+				+ " received registration confirmed msg:[assignedSchedulerPort:" + this.assignedSchedulerPort
+				+ ", direction:" + (this.direction == 1 ? "Up" : "Down") + "]");
 	}
 	
 	/**
@@ -211,8 +174,13 @@ public class Elevator implements Runnable{
 	 */
 	private void handleStop()
 	{
-		this.sensorThread.interrupt();
-		this.motorThread.interrupt();
+		if(this.sensorThread != null)
+		{
+			this.sensorThread.interrupt();
+			this.motorThread.interrupt();
+			this.doorsOpen = true;
+		}
+
 		byte[] stoppedMsg = new byte[] {9};
 		
 		try {
@@ -233,14 +201,14 @@ public class Elevator implements Runnable{
 	private void handleDoorClose()
 	{
 		this.doorsOpen = false;
-		System.out.println("Closing doors");
 		byte[] doorClosedMsg = new byte[] {3};
 		try {
-			System.out.println("Sending door close message. ");
 			DatagramPacket doorClosedPckt = new DatagramPacket(doorClosedMsg, 
 					doorClosedMsg.length, InetAddress.getLocalHost(),this.assignedSchedulerPort);
 			DatagramSocket doorClosedMsgSckt = new DatagramSocket();
 			doorClosedMsgSckt.send(doorClosedPckt);
+			System.out.println("Elevator with port:" + this.portNumber +
+					" closed its doors.");
 			doorClosedMsgSckt.close();
 		} catch (IOException e)
 		{
@@ -262,7 +230,10 @@ public class Elevator implements Runnable{
 	private void handleRequest(byte[] data)
 	{
 		//Message received format: [0 - floor - carButton - direction(1 is up -1 is down)]
-		//System.out.println("Got request with " + Arrays.toString(data));
+		System.out.print("Elevator with port:" + this.portNumber + 
+				" received request with contents:[");
+		System.out.println("FloorNum:" + data[1] + ", carButton:" + data[2]
+				+ ", direction:" + (data[3] == 1 ? "Up" : "Down") + "]");
 		if(this.currentFloor != data[1] || this.firstRequest) 
 		{
 			this.destinationFloor = data[1];
@@ -299,6 +270,10 @@ public class Elevator implements Runnable{
 			DatagramPacket elevatorReadyPckt = new DatagramPacket(elevatorReadyMsg, elevatorReadyMsg.length
 					,InetAddress.getLocalHost(), this.assignedSchedulerPort);
 			DatagramSocket elevatorReadySckt = new DatagramSocket();
+			/*
+			System.out.println("Elevator wtih port:" + this.portNumber + " sending ReadyMsg with:["
+					+ "currentFloor:" + this.currentFloor + ", destinationFloor:" + this.destinationFloor
+					+ ", direction:" + (this.direction == 1 ? "Up" : "Down") + "]");*/
 			elevatorReadySckt.send(elevatorReadyPckt);
 			elevatorReadySckt.close();
 		}catch (IOException e)
@@ -306,6 +281,7 @@ public class Elevator implements Runnable{
 			e.printStackTrace();
 		}
 	}
+	
 	/**
 	 * Method executed by initial thread assigned to an
 	 * instance of this runnable. It registers the instance
@@ -319,14 +295,14 @@ public class Elevator implements Runnable{
 		registerElev[4] = port;
 		
 		try {
-			System.out.println("Sending register elevator");
 			//later on need elevator to know host of and port of scheduler when being instantiated
 			DatagramPacket pck = new DatagramPacket(registerElev, registerElev.length, 
 					InetAddress.getLocalHost(),69);
 			DatagramSocket soc = new DatagramSocket();
 			soc.send(pck);
 			soc.close();
-			System.out.println("Sent register elevator");
+			System.out.println("Elevator with port:" + this.portNumber + " sent registration msg:" + 
+			Arrays.toString(registerElev));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -352,6 +328,9 @@ public class Elevator implements Runnable{
 					InetAddress.getLocalHost(), this.assignedSchedulerPort);
 			DatagramSocket sensorSckt = new DatagramSocket();
 			sensorSckt.send(sensorPckt);
+			System.out.println("Elevator with port:" + this.portNumber + " sending sensorMsg with["
+					+ "approachingFloor:" + this.currentFloor + ", Don't_Stop(Special case):"
+					+ this.specialCase + "]");
 			sensorSckt.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -365,10 +344,8 @@ public class Elevator implements Runnable{
 	 */
 	public void sensorFunction()
 	{
-		System.out.println("SensorThread");
 		while(this.sensorCount > 0)
 		{
-			System.out.println("SensorCount: " + this.sensorCount);
 			try {
 				Thread.sleep(2000);
 				sendSensorMsg();
@@ -377,7 +354,6 @@ public class Elevator implements Runnable{
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				//e.printStackTrace();
-				System.out.println("Interrupted sensor");
 				break;
 			}
 		}
@@ -391,23 +367,17 @@ public class Elevator implements Runnable{
 	 */
 	private void mimicMovement()
 	{
-		//here function should calculate the number of floors it needs to move 
+		//calculate the number of floors it needs to move 
 		int floorDiff = Math.abs(this.currentFloor - this.destinationFloor);
-		System.out.println("floordiff is " + floorDiff);
-		//multiply the avg 10000milliseconds to 1 floor by the number of floors 
 		try {
-			System.out.println("Elevator moving");
 			Thread.sleep(floorDiff*3000);
-			//if thread wakes up on its own then it got to the final destination 
-			//that was updated when the move request was received
-			//so we update current floor as that floor
-			//send packet to scheduler elevator has arrived
+			//if thread wakes up on its own then it got to the destination floor
 			int anyPendingDest = this.pendingDestinations.isEmpty() ? 0 : 1;
 			int destination = anyPendingDest == 1 ? this.pendingDestinations.peekFirst() : -1;
-			byte[] arrivalMessage = new byte[5];   //byte 5 is used to represent arrival to destination
-			arrivalMessage[0] = 10;
-			arrivalMessage[1] = (byte)anyPendingDest;
-			arrivalMessage[2] = (byte)destination;
+			byte[] arrivalMessage = new byte[5];
+			arrivalMessage[0] = 10;//byte 10 is used to represent arrival msg
+			arrivalMessage[1] = (byte)anyPendingDest;// 1 if there is 0 if not
+			arrivalMessage[2] = (byte)destination;//-1 if previous index is 0 otherwise floor No.
 			arrivalMessage[3] = (byte)this.direction;
 			
 			DatagramPacket arrivalMsgPkt = new DatagramPacket(arrivalMessage, arrivalMessage.length,
@@ -418,19 +388,22 @@ public class Elevator implements Runnable{
 			
 			this.specialCase = this.specialCase & 0x00000000;
 			this.doorsOpen = true;
-			System.out.printf("Elevator got to destination floor: %d and doors open\n",destinationFloor);
 			
+			System.out.println("Elevator with port:" + this.portNumber + 
+					" arrived at floor:" + this.currentFloor + " and opening doors");
+			/*
+			System.out.println("Elevator with port:" + this.portNumber + 
+					" sending ArrivalMsg with:[pendingDestinationListEmpty:" + 
+					(anyPendingDest == 1 ? "True" : "False") + ", destinationAtHeadOfList:"
+					+ destination + "]");*/
 			
 		} catch (IOException e) {
-			
 			//some better handling here(later iteration)
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			//e.printStackTrace();
-			//Throwable  s = e.getCause();
-			//System.out.println(s);
-			System.out.printf("Elevator stopped at floor %d to answer request\n",currentFloor);			
+			return;
+		} catch (InterruptedException e) {
+			System.out.printf("Elevator stopped at floor %d to answer request\n",this.currentFloor);	
+			return;
 		}
 		
 	}
@@ -443,7 +416,7 @@ public class Elevator implements Runnable{
 	{
 		if (Thread.currentThread().getName().equals("messageThread")) {
 			this.processorFunction();
-			System.out.println("Exiting");
+			
 		} else if (Thread.currentThread().getName().equals("motorThread")) {
 			this.mimicMovement();
 		}
@@ -463,30 +436,81 @@ public class Elevator implements Runnable{
 		this.receiveSckt.close();
 	}
 	
+	/**
+	 * Method not to be used outside Unit testing
+	 * @return
+	 */
 	public synchronized int getDirection() {
 		return this.direction;
 	}
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
 	public synchronized int getCurrentFloor() {
 		return this.currentFloor;
 	}
-	public int getDestinationFloor() {
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
+	public synchronized int getDestinationFloor() {
 		return this.destinationFloor;
 	}
-	public int getPort() {
+	
+	/**
+	 * Method not to be used outside unit testing 
+	 * @return
+	 */
+	public synchronized int getPort() {
 		return this.portNumber;
 	}
-	public int getAssignedPort() {
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
+	public synchronized int getAssignedPort() {
 		return this.assignedSchedulerPort;
 	}
-	public boolean getDoorsOpen() {
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
+	public synchronized boolean getDoorsOpen() {
 		return this.doorsOpen;
 	}
-	public boolean isMotorInterrupted() {
-        return this.motorThread.isInterrupted();   //returns true is motorThread is interrupted
-    }
-	public boolean isSensorInterrupted() {
-        return this.sensorThread.isInterrupted();   //returns true is sensorThread is interrupted
-    }
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
+	public synchronized int getSensorCount()
+	{
+		return this.sensorCount;
+	}
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
+	public Boolean isSensorThreadExecuting()
+	{
+		return this.sensorThread.isAlive();
+	}
+	
+	/**
+	 * Method not to be used outside unit testing
+	 * @return
+	 */
+	public Boolean isMotorThreadExecuting()
+	{
+		return this.motorThread.isAlive();
+	}
+	
 	/**
 	 * 
 	 * @param args
@@ -499,5 +523,11 @@ public class Elevator implements Runnable{
 		
 		Elevator e1 = new Elevator(71);
 		e1.start();
+		
+		Elevator e2 = new Elevator(72);
+		e2.start();
+		
+		Elevator e3 = new Elevator(73);
+		e3.start();
 	}
 }
