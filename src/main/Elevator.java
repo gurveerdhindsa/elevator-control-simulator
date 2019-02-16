@@ -121,7 +121,7 @@ public class Elevator implements Runnable{
 	        	break;
 	        
 	        case 2:
-	        	handleDoorClose();
+	        	handleDoorClose(); // close doors
 	        	break;
 	        
 	        case 4:
@@ -129,7 +129,7 @@ public class Elevator implements Runnable{
 				handleRequest(data);
 				break;
 			
-	        case 6:
+	        case 6: // receives byte 6, elevator can move
 				this.motorThread = new Thread(this, "motorThread");
 				this.sensorThread = new Thread(this, "sensorThread");
 				System.out.println("Elevator with port:" + this.portNumber + " moving from:"
@@ -157,8 +157,10 @@ public class Elevator implements Runnable{
 	}
 	
 	/**
-	 * 
-	 * @param data
+	 * Registering an elevator to a the specified port number , specifying the 
+	 * direction of the elevator -1 is down and 1 is up
+	 * Third index being the direction key
+	 * @param data byte[]
 	 */
 	private void handleRegistrationConfirmed(byte[] data)
 	{
@@ -170,15 +172,15 @@ public class Elevator implements Runnable{
 	}
 	
 	/**
-	 * 
+	 * Sends packet to scheduler to tell the elevator has stopped
 	 */
 	private void handleStop()
 	{
-		if(this.sensorThread != null)
+		if(this.sensorThread != null) // interrupt the sensor thread to open doors to service a request
 		{
-			this.sensorThread.interrupt();
-			this.motorThread.interrupt();
-			this.doorsOpen = true;
+			this.sensorThread.interrupt();// interrupt sensor thread
+			this.motorThread.interrupt(); // interrupt elevator
+			this.doorsOpen = true; // open doors
 		}
 
 		byte[] stoppedMsg = new byte[] {9};
@@ -196,12 +198,12 @@ public class Elevator implements Runnable{
 	}
 	
 	/**
-	 * 
+	 * The scheduler sends byte 2 indicating it to close the elevator doors
 	 */
 	private void handleDoorClose()
 	{
 		this.doorsOpen = false;
-		byte[] doorClosedMsg = new byte[] {3};
+		byte[] doorClosedMsg = new byte[] {3}; // sends a byte 3 back to the scheduler, letting it know doors are closed
 		try {
 			DatagramPacket doorClosedPckt = new DatagramPacket(doorClosedMsg, 
 					doorClosedMsg.length, InetAddress.getLocalHost(),this.assignedSchedulerPort);
@@ -216,6 +218,10 @@ public class Elevator implements Runnable{
 		}
 	}
 	
+	/**
+	 * Update its new floor number, returns the next floor to be service from linked list
+	 * meaning that request has been serviced
+	 */
 	public void updateDestination()
 	{
 		this.destinationFloor = this.pendingDestinations.removeFirst();
@@ -224,7 +230,7 @@ public class Elevator implements Runnable{
 	}
 	
 	/**
-	 * 
+	 * A request comes in with the floor number, destination floor and direction
 	 * @param data
 	 */
 	private void handleRequest(byte[] data)
@@ -241,25 +247,25 @@ public class Elevator implements Runnable{
 			this.firstRequest = false;
 		}
 		
-		else if(direction == 1)
+		else if(direction == 1) // elevator request is in upwards direction
 		{
-			this.addPendingDest(this.destinationFloor < data[2] ? data[2] : this.destinationFloor);
+			this.addPendingDest(this.destinationFloor < data[2] ? data[2] : this.destinationFloor); // adds request to the linked list
 			this.destinationFloor = this.destinationFloor < data[2] ? this.destinationFloor : data[2];	
 		}
-		else if(direction == -1)
+		else if(direction == -1) //elevator request in downwards direction
 		{
 			this.addPendingDest(this.destinationFloor < data[2] ? this.destinationFloor : data[2]);
 			this.destinationFloor = this.destinationFloor < data[2] ? data[2] : this.destinationFloor;
 		}
 		
 		this.setDirection();
-		this.sensorCount = Math.abs(this.currentFloor - this.destinationFloor);
+		this.sensorCount = Math.abs(this.currentFloor - this.destinationFloor); // calculate the difference between the curr floor and destination floor
 		this.specialCase = this.direction == data[3] ? this.specialCase : (this.specialCase | 0x00000001);
-		sendReady();
+		sendReady(); // send packet to scheduler ready to move
 	}
 	
 	/**
-	 * 
+	 * Sends the request to the scheduler, it is ready to move
 	 */
 	private void sendReady()
 	{
@@ -312,7 +318,8 @@ public class Elevator implements Runnable{
 	}
 	
 	/**
-	 * 
+	 * Sending a packet for every floor that is passed in between the current floor and destination floor
+	 * to the scheduler, if the special case is triggered the elevator will not stop to take requests
 	 */
 	public void sendSensorMsg()
 	{
@@ -320,9 +327,9 @@ public class Elevator implements Runnable{
 		{
 			return;
 		}
-		this.currentFloor = this.direction == 1 ? (this.currentFloor + 1) : (this.currentFloor - 1);
+		this.currentFloor = this.direction == 1 ? (this.currentFloor + 1) : (this.currentFloor - 1); // incrementing/decrementing floor based on direction
 		byte[] sensorMsg = new byte[] {7, (byte)this.direction, (byte)this.specialCase,
-				(byte)this.currentFloor};
+				(byte)this.currentFloor}; // creates packet to 
 		try {	
 			DatagramPacket sensorPckt = new DatagramPacket(sensorMsg, sensorMsg.length,
 					InetAddress.getLocalHost(), this.assignedSchedulerPort);
@@ -340,15 +347,17 @@ public class Elevator implements Runnable{
 	}
 	
 	/**
-	 * 
+	 * Iterates for the floors between the current and destination floors
+	 * Sleeping the thread for each floor and sending the message to the scheduler 
 	 */
 	public void sensorFunction()
 	{
+		
 		while(this.sensorCount > 0)
 		{
 			try {
-				Thread.sleep(2000);
-				sendSensorMsg();
+				Thread.sleep(2000); // sleep for two seconds
+				sendSensorMsg(); // send packet to let scheduler know
 				this.sensorCount --;
 				Thread.sleep(500);
 			} catch (InterruptedException e) {

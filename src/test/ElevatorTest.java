@@ -42,7 +42,10 @@ public class ElevatorTest {
 		this.elev.stop();
 	}
 	
-	
+	/**
+	 * Thread sleeps for time seconds
+	 * @param time int
+	 */
 	public void waitms(int time)
 	{
 		try {
@@ -52,7 +55,9 @@ public class ElevatorTest {
 			e1.printStackTrace();
 		}
 	}
-	
+	/**
+	 * 
+	 */
 	public void sendMove() {
 		//mimic sending of move message from scheduler to elevator
 		byte[] elevMoveMsg = new byte[] {6};
@@ -69,11 +74,13 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 	}
-	
+	/**
+	 * Sending a made-up request to  elevator port 10
+	 */
 	public void sendRequest()
 	{
 		//make up a request 
-		byte[] newRequest = new byte[] {4, 8, 3, -1}; 
+		byte[] newRequest = new byte[] {4, 8, 3, -1};  // going down from floor 8 to 3
 		
 		//send fake request {4, 8, 3, -1}
 		try {
@@ -88,7 +95,9 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 	}
-	
+	/**
+	 * Sending the registration to the elevator port 10
+	 */
 	public void sendRegistrationConfirmed()
 	{
 		//send a registrationConfirmation msg
@@ -105,7 +114,11 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 	}
-	
+	/**
+	 * Closing door when a floor request is serviced
+	 * sending the packet to scheduler letting it know 
+	 * it has closed the doors
+	 */
 	public void sendDoorClose()
 	{
 		//mimic sending door close from scheduler side
@@ -123,7 +136,10 @@ public class ElevatorTest {
 		} 
 	}
 	
-
+	/**
+	 * Receiving the packet for registration of elevator to port 10 from scheduler
+	 * confirming the packet
+	 */
 	@Test
 	public void testRegistration()
 	{
@@ -133,7 +149,7 @@ public class ElevatorTest {
 		
 		try {
 			DatagramPacket registration = new DatagramPacket(regist,regist.length);
-			DatagramSocket getRegist = new DatagramSocket(69);
+			DatagramSocket getRegist = new DatagramSocket(69); 
 			
 			//start an elevator with all its child threads 
 			elevThread.start();
@@ -156,7 +172,10 @@ public class ElevatorTest {
 		System.out.println("####EndingTest:testRegistrationt####\n\n\n\n");
 	}
 	
-	
+	/**
+	 * Receiving the registration packet with the ready to move message
+	 * Testing the current floor of 0, destination 8 and going up direction
+	 */
 	@Test
 	public void testReceiveRequest()
 	{
@@ -200,7 +219,9 @@ public class ElevatorTest {
 		System.out.println("####EndingTest:testReceiveRequest####\n\n\n\n");
 		
 	}
-	
+	/**
+	 * Receive close door packet
+	 */
 	@Test
 	public void testDoorClose()
 	{
@@ -235,7 +256,10 @@ public class ElevatorTest {
 		System.out.println("####EndingTest:testDoorClose####\n\n\n\n");
 	}
 	
-	
+	/**
+	 * Test case to combine all operations of registering elevator message
+	 * , closing doors and sending a request from floor 8 to 3
+	 */
 	@Test
 	public void testElevatorMoveAndStopped()
 	{
