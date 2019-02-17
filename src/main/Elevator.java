@@ -29,7 +29,6 @@ public class Elevator implements Runnable{
 	private boolean firstRequest, doorsOpen;   //false = door closed ;
 	private int sensorCount, //sensorCount how many times to do 8s notification
 	                    specialCase; //special movement with no 8s notification
-	private String name;
 	                                     
 	
 	/**

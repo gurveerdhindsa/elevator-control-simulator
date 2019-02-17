@@ -13,7 +13,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,6 +75,26 @@ public class SchedulerElevatorsTest {
 	}
 	
 	
+	public void sendReady(int currentFloor, int destinationFloor, int direction)
+	{
+		byte[] elevReady = new byte[] {5, (byte)currentFloor, (byte)destinationFloor,
+				(byte)direction};
+		
+		try
+		{
+			DatagramPacket pckt = new DatagramPacket(elevReady,elevReady.length,
+					InetAddress.getLocalHost(), this.assignedPortNum);
+			DatagramSocket sckt = new DatagramSocket();
+			sckt.send(pckt);
+			sckt.close();
+		}catch(IOException e)
+		{
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+	}
+	
 	public void sendDoorClosed()
 	{
 		//mimic sending door close from scheduler side
@@ -112,13 +131,35 @@ public class SchedulerElevatorsTest {
 	   return request;
 	}
 	
+	/**
+	 * Info: Tests the messaging sequence between an Elevator 
+	 * and Scheduler from doorOpen state to Moving state of Elevator
+	 * @throws SocketException
+	 */
 	@Test
 	public void testSequence() throws SocketException {
 		
+		System.out.println("####Starting:testSequence####");
+		
+		//setup
+		int floor = 5;
+		int carButton = 1;
 		this.schedulerThread = new Thread(this.scheduler);
 		byte[] data = new byte[100];
 		DatagramPacket pckt = new DatagramPacket(data,data.length);
 		DatagramSocket sckt = new DatagramSocket(this.elevatorPortNum);
+		
+		
+		//assumption is an Elevator registration
+		//has already been sent to the Scheduler 
+		//and this SchedulerElevators instance 
+		//represents the personalized thread the
+		//scheduler has spawn for a specific 
+		//elevator. So on starting 
+		//we expect the thread to make itself
+		//known to the elevator, hence we listen 
+		//for an ElevatorRegistration confirmation
+		//from the scheduler side
 		try
 		{
 			schedulerThread.start();
@@ -129,16 +170,20 @@ public class SchedulerElevatorsTest {
 			e.printStackTrace();
 		}
 		
-		
+		//validate the received registration confirmation message
 		assertTrue(data[0] == 1);
 		assertTrue(data[1] == 46);
 		assertTrue(data[2] == 0);
 		
-		FloorRequest request = this.createRequest(5,1, "Down");
-		
+		//create a request and put it into the list
+		//visible to the personalized thread for an elevator 
+		//on the scheduler side
+		FloorRequest request = this.createRequest(floor, carButton, "Down");
+		//listen for close door msg from SUT(system under test)
 		try
 		{
 			this.inputRequest(down, request);
+			//listen for a close door command on elevator side
 			sckt.receive(pckt);
 		}
 		catch(IOException e)
@@ -148,10 +193,37 @@ public class SchedulerElevatorsTest {
 		
 		assertTrue(data[0] == 2);
 		
-		//elevators reply
-		//this.sendDoorClosed();
+		//send reply to SUT and listen for
+		//request msg from SUT(System under test)
+		try
+		{
+			this.sendDoorClosed();
+			sckt.receive(pckt);
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
 		
-		//this.waitms(1000);
+		assertTrue(data[0] == 4);//expected msg index
+		assertTrue(data[1] == floor); //floor num
+		assertTrue(data[2] == carButton); //carButton num
+		assertTrue(data[3] == -1); //direction shld be down
+		
+		//mimic sending readyMsg to SUT and listening for move
+		try
+		{
+			this.sendReady(0, 5, -1);
+			sckt.receive(pckt);
+		}catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		assertTrue(data[0] == 6);//verify move msg;
+		sckt.close();
+		this.waitms(50);
+		System.out.println("####EndTest:testSequence####");
 	}
 
 }

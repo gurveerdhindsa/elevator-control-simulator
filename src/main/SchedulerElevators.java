@@ -6,7 +6,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.Arrays;
 import java.util.List;
 
 public class SchedulerElevators implements Runnable{
@@ -24,6 +23,23 @@ public class SchedulerElevators implements Runnable{
 	private DatagramSocket receiveElevatorSocket;
 	private DatagramSocket sendElevatorSocket;
 	
+	/**
+	 * Creates a runnable instance with a single thread
+	 * which will handle all communications the Elevator 
+	 * with elevPort has to do with scheduler from now on
+	 * @param up: the list in which all requests in the 'up' 
+	 *        direction are queued
+	 * @param down: the list in which all requests in the 'down' 
+	 *        direction are queued
+	 * @param elevPort: the port number of the Elevator client 
+	 *                  that this runnable instance will be 
+	 *                  responsible for
+	 * @param assignedPort: the port number on the scheduler side
+	 *                    to which the client Elevator instance
+	 *                    will send all further messages to
+	 * @param initList:  the initial direction which the
+	 *                 client Elevator instance is headed to
+	 */
 	public SchedulerElevators(List<FloorRequest>up, List<FloorRequest>down, 
 			int elevPort, int assignedPort, int initList)
 	{
@@ -43,6 +59,15 @@ public class SchedulerElevators implements Runnable{
 		}
 	}
 
+	/**
+	 * goes through all floors from the param floor to
+	 * the topmost floor checking if there is a request
+	 * (direction button pressed) on any of these floors
+	 * it returns a FloorRequest instance otherwise null
+	 * @param floor:the base floor at which to start checking
+	 *              for requests
+	 * @return: a FloorRequest instance or null
+	 */
 	public FloorRequest checkUpRequests(int floor)
 	{
 		synchronized(this.up)
@@ -59,6 +84,16 @@ public class SchedulerElevators implements Runnable{
 			return null;
 		}
 	}
+	
+	/**
+	 *goes through all floors from the param floor to
+	 * the bottom floor checking if there is a request
+	 * (direction button pressed) on any of these floors
+	 * it returns a FloorRequest instance otherwise null
+	 * @param floor:the base floor at which to start checking
+	 *              for requests
+	 * @return: a FloorRequest instance or null
+	 */
 	public FloorRequest checkDownRequests(int floor)
 	{
 		synchronized(this.down)
@@ -76,7 +111,15 @@ public class SchedulerElevators implements Runnable{
 		}
 	}
 	
-	//is there an up request in the current floor?
+	
+	/**
+	 * Checks if there is a pending request in the
+	 * 'up' direction on a certain floor
+	 * @param floor:floor on which to check for 
+	 *              pending request
+	 * @return:FloorRequest instance if there is, null
+	 *         if no pending request. 
+	 */
 	public FloorRequest getUpCurrentFloorRequest(int floor)
 	  {
 		synchronized(this.up)
@@ -91,7 +134,14 @@ public class SchedulerElevators implements Runnable{
 		return null;
 	  }
 	
-	//is there an down request in the current floor?
+	/**
+	 * Checks if there is a pending request in the
+	 * 'down' direction on a certain floor
+	 * @param floor:floor on which to check for 
+	 *              pending request
+	 * @return:FloorRequest instance if there is, null
+	 *         if no pending request. 
+	 */
 	public FloorRequest getDownCurrentFloorRequest(int floor)
 	  {
 		synchronized(this.down)
@@ -99,14 +149,24 @@ public class SchedulerElevators implements Runnable{
 			if(this.down.get(floor).timestamp != null)
 			{
 				FloorRequest req = this.down.get(floor);
-				this.down.set(floor, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX IN THE LIST
+				this.down.set(floor, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE
+				                                          //A REQUEST FROM AN INDEX IN THE LIST
 				return req;
 			}
 		}
 		return null;
 	  }
 	
-	//At initialization - check all up requests starting from parameter floor to 19 
+	/**
+	 * Checks all floors from param to topmost floor
+	 * for pending requests in the 'up' direction.
+	 * If none, block waiting in the 'up' direction
+	 * requests queue 
+	 * @param floor: floor from which to start checking
+	 * @return: FloorRequest instance representing
+	 *         the request pending in the 'up'
+	 *         direction of a floor
+	 */
 	private FloorRequest checkInitialUp(int floor)
 	{
 		boolean empty = true;
@@ -126,8 +186,6 @@ public class SchedulerElevators implements Runnable{
 			while(empty)
 			{
 				try {
-					System.out.println("Scheduler: " + Thread.currentThread().getName() + 
-							" Waiting on up list");
 					this.up.wait();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -146,16 +204,21 @@ public class SchedulerElevators implements Runnable{
 			}
 			
 			FloorRequest req = this.up.get(reqIndex);
-			System.out.println("Scheduler: " + Thread.currentThread().getName() + 
-					" Got up request");
-			this.up.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO REMOVE A REQUEST FROM AN INDEX	IN THE LIST
+			this.up.set(reqIndex, new FloorRequest()); //USE THIS EVERYTIME YOU WANT TO 
+			                                          //REMOVE A REQUEST FROM AN INDEX	IN THE LIST
 			return req;
 		}
 	}
 	
-	//At initialization or when stationary and no requests
-	//in curr direction
-	//- check all down requests starting from floor 19 to 0 
+	/** Checks all floors from param to bottom floor
+	 * for pending requests in the 'down' direction.
+	 * If none, block waiting in the 'down' direction
+	 * requests queue 
+	 * @param floor: floor from which to start checking
+	 * @return: FloorRequest instance representing
+	 *         the request pending in the 'down'
+	 *         direction of a floor
+	 */
 	private FloorRequest checkInitialDown(int floor)
 	{
 		boolean empty = true;
@@ -199,7 +262,13 @@ public class SchedulerElevators implements Runnable{
 		}
 	}
 	
-	
+	/**
+	 * control function that listens
+	 * for messages from this instance's
+	 * single client Elevator instance and 
+	 * take appropriate actions based on
+	 * message received
+	 */
 	public void workerFunction()
 	{
 		while(true)
@@ -211,9 +280,7 @@ public class SchedulerElevators implements Runnable{
 				this.receiveElevatorSocket.receive(packet);
 			}
 			catch (IOException e) {
-				// TODO Auto-generated catch block
 				//e.printStackTrace();
-				System.out.println("closing");
 				break; //@TODO get rid of and do better handling
 			} 
 			
@@ -236,8 +303,7 @@ public class SchedulerElevators implements Runnable{
 					catch(IOException e)
 					{
 						e.printStackTrace();
-					}
-					
+					}	
 				}
 				break;
 			
@@ -282,6 +348,20 @@ public class SchedulerElevators implements Runnable{
 		}
 	}
 	
+	
+	/**
+	 * Handles the arrival of an elevator to a
+	 * floor if the elevator was moving in the
+	 * 'down' direction. If the elevator has 
+	 * no more passengers inside a new request is 
+	 * searched for it. However if elevator still
+	 * has passengers it is commanded to close it's
+	 * doors and resume moving
+	 * @param msg: byte array containing message
+	 *           sent from the client Elevator 
+	 *           instance indicating it's arrival
+	 *           and doors opening at a floor
+	 */
 	private void handleDownArrival(byte[] msg)
 	{
 		if(this.currentFloor == 0)
@@ -309,10 +389,21 @@ public class SchedulerElevators implements Runnable{
 			this.currentRequest = this.getDownCurrentFloorRequest(this.currentFloor);
 			break;
 		}
-		System.out.println("Scheduler: " + Thread.currentThread().getName() + "handled down arrival: " + this.currentRequest
-				+ " for scheduler with port " + this.assignedPort);
 	}
 	
+	/**
+	  * Handles the arrival of an elevator to a
+	 * floor if the elevator was moving in the
+	 * 'up' direction. If the elevator has 
+	 * no more passengers inside a new request is 
+	 * searched for it. However if elevator still
+	 * has passengers it is commanded to close it's
+	 * doors and resume moving
+	 * @param msg: byte array containing message
+	 *           sent from the client Elevator 
+	 *           instance indicating it's arrival
+	 *           and doors opening at a floor
+	 */
 	private void handleUpArrival(byte[] msg)
 	{
 		if(this.currentFloor == this.topFloor)
@@ -341,16 +432,24 @@ public class SchedulerElevators implements Runnable{
 			break;
 		}
 	}
+	
+	/**
+	 * Handles the sensor message sent from
+	 * an Elevator client instance when it
+	 * approaches a floor whilst going 'up'.
+	 * Method checks if there is a pending 
+	 * request in the 'up' direction for the
+	 * floor the elevator is approaching.
+	 * If there is, elevator is commanded
+	 * to stop, otherwise do nothing
+	 */
 	public void handleUp8s()
 	{
-		//this.updateCurrentFloor();
 		if(this.currentFloor != this.destinationFloor)
 		{
 			this.currentRequest = getUpCurrentFloorRequest(this.currentFloor);
 		}
-		
-		System.out.println("Scheduler: " + Thread.currentThread().getName() + "updatedfloor: " + this.currentFloor + " req:" + this.currentRequest
-				+ " for scheduler with port " + this.assignedPort);
+	
 		if(this.currentRequest != null)
 		{
 			sendStop();	
@@ -358,22 +457,34 @@ public class SchedulerElevators implements Runnable{
 		
 	}
 	
+	/**
+	 Handles the sensor message sent from
+	 * an Elevator client instance when it
+	 * approaches a floor whilst going 'down'.
+	 * Method checks if there is a pending 
+	 * request in the 'down' direction for the
+	 * floor the elevator is approaching.
+	 * If there is, elevator is commanded
+	 * to stop, otherwise do nothing
+	 */
 	public void handleDown8s()
 	{
-		//this.updateCurrentFloor();
 		if(this.currentFloor != this.destinationFloor)
 		{
 			this.currentRequest = getDownCurrentFloorRequest(this.currentFloor);
 		}
 		
-		System.out.println("Scheduler: " + Thread.currentThread().getName() + " updatedfloor: " + this.currentFloor + " req:" + this.currentRequest
-				+ " for scheduler with port " + this.assignedPort);
 		if(this.currentRequest != null)
 		{
 			sendStop();
 		}
 		
 	}
+	
+	/**
+	 *Updates the currentFloor a client
+	 *Elevator instance is currently on
+	 */
 	public void updateCurrentFloor()
 	{
 		if (direction == 1) {
@@ -382,9 +493,16 @@ public class SchedulerElevators implements Runnable{
 		else {
 		   currentFloor--;
 		}
-		System.out.println("Scheduler: " + Thread.currentThread().getName() + " updated current floor  " + this.currentFloor
-				+" for scheduler with port " + this.assignedPort);
+		
+		System.out.println("Scheduler -> Elevator with port:" + this.elevPortNumber
+				+ " now at floor:" + this.currentFloor);
 	}
+	
+	/**
+	 * Function from which an instance notifies
+	 * it's client Elevator instance of it's
+	 * port and searches for first request to handle
+	 */
 	public void start()
 	{
 
@@ -397,7 +515,10 @@ public class SchedulerElevators implements Runnable{
 		workerFunction();
 	}
 	
-	
+	/**
+	 * Sends a message to the client Elevator instance
+	 * commanding it to start moving
+	 */
 	private void sendMove()
 	{
 		byte[] msg = new byte[] {6};
@@ -405,6 +526,8 @@ public class SchedulerElevators implements Runnable{
 		{
 			DatagramPacket request = new DatagramPacket(msg,msg.length,
 					InetAddress.getLocalHost(), this.elevPortNumber);
+			System.out.println("Scheduler-> Instructing Elevator with port:" + this.elevPortNumber
+					+ " to start moving");
 			this.sendElevatorSocket.send(request);
 		}
 		catch(IOException e)
@@ -413,6 +536,13 @@ public class SchedulerElevators implements Runnable{
 		}
 		
 	}
+	
+	/**
+	 * Sends a request to a client Elevator instance with 
+	 * information like the floor on which there is a pending
+	 * request, the destination floor that passenger wants to 
+	 * got to, and the direction the passenger wants to move(up or down)
+	 */
 	private void sendRequest()
 	{
 		//[4 - floor - carButton - direction(1 is up -1 is down)
@@ -426,6 +556,10 @@ public class SchedulerElevators implements Runnable{
 		{
 			DatagramPacket request = new DatagramPacket(msg,msg.length,
 					InetAddress.getLocalHost(),this.elevPortNumber);
+			
+			System.out.println("Scheduler ->sending Request msg to Elevator with port:" + this.elevPortNumber
+					+ " Msg->[floorNum:" + msg[1] + ", carButton:" + msg[2] + ", direction:"
+					+ (msg[3] == 1 ? "up" : "down") + "]");
 			this.sendElevatorSocket.send(request);
 			this.currentRequest = null;
 		}
@@ -434,6 +568,12 @@ public class SchedulerElevators implements Runnable{
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+	 * Sends a message to the client Elevator instance
+	 * notifying about which port to send
+	 * all further communication with Scheduler to
+	 */
 	public void sendRegistrationConfirmation() {
 		
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -454,7 +594,12 @@ public class SchedulerElevators implements Runnable{
 		}
 	}
 	
-	public void sendStop() {
+	/**
+	 * Sends a message to the client Elevator instance
+	 * instructing it to stop at the currentFloor it is
+	 * approaching 
+	 */
+	private void sendStop() {
 		
 		byte[] stopData = new byte[] {8};
 		
@@ -462,15 +607,21 @@ public class SchedulerElevators implements Runnable{
 			DatagramPacket elevatorStopPckt = new DatagramPacket(stopData, stopData.length, 
 					InetAddress.getLocalHost(),this.elevPortNumber);
 			this.sendElevatorSocket.send(elevatorStopPckt);
-			System.out.println(Thread.currentThread().getName() + 
-					" Sent stop");
+			
+			System.out.println("Scheduler -> stopping Elevator with port:" + this.elevPortNumber
+					+ " to pick up passenger at:" + this.currentFloor
+					+ " going " + this.currentRequest.floorButton + " to:" + 
+					this.currentRequest.carButton);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	
+	/**
+	 * Sends a message to the client Elevator instance
+	 * instructing it to close it's doors
+	 */
 	public void sendDoorClose()
 	{
 		byte[] doorCloseMsg = new byte[] {2};

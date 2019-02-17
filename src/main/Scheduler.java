@@ -1,5 +1,4 @@
 package main;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
@@ -29,7 +28,6 @@ public class Scheduler implements Runnable{
 	 * messages/commands to and from floor, and the other 
 	 * to listen/send messages to and from elevator
 	 */
-	
 	public Scheduler(int numberOfElevators, int basePortNumber)
 	{
 		this.floorMsgThread = new Thread(this,"floorThread");
@@ -58,6 +56,8 @@ public class Scheduler implements Runnable{
 			e.printStackTrace();
 		}
 	}
+	
+	
 	/**
 	 * The elevatorThread runs continuously listening for
 	 * messages sent to the scheduler by the elevator 
@@ -65,7 +65,6 @@ public class Scheduler implements Runnable{
 	 * messages to the floor and elevator
 	 * subsystems according to the messages received
 	 */
-	
 	public void listenForElevatorMsg()
 	{
 		while(true)
@@ -100,40 +99,6 @@ public class Scheduler implements Runnable{
 			default:
 				break;
 			}
-			
-			/*
-			if((byte)elevatorMsg[0] == (byte)0)
-			{
-				//register elevator 
-				//
-				
-				// Thread somethread = new Thread(new SchedulerElevators(
-				//send response back to elevator telling it new port number
-				//assigned to it.
-				//have ArrayList<Integer>
-				//add(our new portnumber)
-				//when
-
-				ArrayList<Integer> assignedPorts = new;
-				for(int p=40; p<45; p++) {
-					assignedPorts.add(p);
-				}
-				
-				int elevatorPort = (int)elevatorMsg[4];
-				
-				ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-				int port = assignedPorts.remove(0);
-				int initList;
-				if(port%2==0) {
-					initList = 1;
-				}
-				else {
-					initList = -1;
-				}
-				
-				Thread newElevator = new Thread(new SchedulerElevators(upRequests, downRequests, elevatorPort, port, initList));
-				
-			}*/
 		}
 	}
 	
@@ -143,7 +108,6 @@ public class Scheduler implements Runnable{
 	 * subsystem, and sends messages to the floor and elevator
 	 * subsystems according to the messages received
 	 */
-	
 	public void listenForFloorMsg()
 	{
 		while(true)
@@ -153,7 +117,6 @@ public class Scheduler implements Runnable{
 			DatagramPacket packet = new DatagramPacket(floorMsg, floorMsg.length);
 			
 			try {
-				System.out.println("Waiting for message from floor");
 				this.receiveFloorSocket.receive(packet);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -161,14 +124,9 @@ public class Scheduler implements Runnable{
 				continue; //@TODO get rid of and do better handling
 			}
 			
-			System.out.println("Floor message received");
 			
-			
-			//floor request
-			//proper code should extract floor number and other info
 			if((byte)floorMsg[0] == (byte)0)
 			{
-				System.out.println("Got request msg");
 				//removing first 0 byte from received packet
 				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
 				//adding new request to front of requests linked list
@@ -186,7 +144,14 @@ public class Scheduler implements Runnable{
 		}		
 	}
 	
-	
+	/**
+	 * Synchronized method that synchronizes the adding
+	 * of floor requests in the 'down' direction to the
+	 * array list
+	 * @param index: the index at which the request is to be
+	 * added onto the list
+	 * @param request the floor request received
+	 */
 	public void addDownRequest(FloorRequest request)
 	{
 		synchronized(this.downRequests)
@@ -199,10 +164,11 @@ public class Scheduler implements Runnable{
 	
 	/**
 	 * Synchronized method that synchronizes the adding
-	 * of floor requests to the array list
+	 * of floor requests in the 'up' direction to the 
+	 * array list
 	 * @param index the index at which the request is to be
 	 * added onto the list
-	 * @param r the floor request received
+	 * @param request the floor request received
 	 */
 	
 	public void addUpRequest(FloorRequest request)
@@ -229,7 +195,7 @@ public class Scheduler implements Runnable{
 	/**
 	 * Synchronized method that synchronizes the adding
 	 * of elevators to the array list of elevators
-	 * @param elevator the elevator to be added to the list
+	 * @param elevator: the elevator to be added to the list
 	 */
 	public void addElevator(SchedulerElevators elevator)
 	{
@@ -252,21 +218,6 @@ public class Scheduler implements Runnable{
 		{
 			this.listenForElevatorMsg();
 		}
-		/*
-		 * else if(Thread.currentThread().getName().equals("elevator1Thread")){
-		 *     this.listenForElevatorMsg();
-		 * }
-		 * else if(Thread.currentThread().getName().equals("elevator2Thread")){
-		 *     this.listenForElevatorMsg();
-		 * }
-		 * else if(Thread.currentThread().getName().equals("elevator3Thread")){
-		 *     this.listenForElevatorMsg();
-		 * }
-		 * else if(Thread.currentThread().getName().equals("elevator4Thread")){
-		 *     this.listenForElevatorMsg();
-		 * }
-		 */
-		
 	}
 	
 	/**

@@ -2,15 +2,10 @@ package test;
 
 import static org.junit.Assert.*;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.Arrays;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,11 +13,6 @@ import main.Elevator;
 
 public class ElevatorTest {
 	
-	/**
-	 * Tests that an Elevator instance when started,
-	 * sends its information such as port number to the 
-	 * Scheduler on port 69 
-	 */
 	
 	private Elevator elev;
 	private int assignedPort;
