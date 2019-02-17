@@ -8,7 +8,6 @@ import java.text.*;
 import java.util.*;
 import java.sql.Timestamp;
 
-
 /**
  * Floor sends a floor request to the scheduler
  * Floor receives when the elevator is moving
@@ -18,11 +17,8 @@ import java.sql.Timestamp;
  */
 
 public class Floor implements Runnable {
-
-	private Thread sendThread,
-				   sendReceiveThread;
+	private Thread sendThread, sendReceiveThread;
 	private DatagramSocket sendReceiveSocket; 	// Socket to send and receive packets
-
 	private List<FloorRequest> floorRequests;	// List of requests to be made
 
 	/**
@@ -32,7 +28,7 @@ public class Floor implements Runnable {
 	public Floor() {
 		sendThread = new Thread(this, "sendThread");
 		sendReceiveThread = new Thread(this, "sendReceiveThread");
-	
+		
 		floorRequests = new ArrayList<FloorRequest>();
 
 		importConfiguration();
@@ -42,7 +38,11 @@ public class Floor implements Runnable {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
+		sendThread.start();
+		sendReceiveThread.start();
 	}
+	
 	/**
 	 * Reads the input file configuration.txt, reads in the time stamp , floor, floor button and car button
 	 * Creates an arrayList of floor request from the file and adds to the list
@@ -94,7 +94,7 @@ public class Floor implements Runnable {
 	 * @return 
 	 */
 	public void send() {
-		//edit to send all requests with random 
+		// edit to send all requests with random 
 		// time in between requests
 		DatagramPacket packet;
 		try {
@@ -126,85 +126,6 @@ public class Floor implements Runnable {
 			System.out.println("Floor requests sent!");
 		}
 	}
-
-	/**
-	 * Receives a packet from the scheduler meaning the elevator is ready to move
-	 * @param
-	 * @return 
-	 */
-	public void receiveElevatorMovement() throws InterruptedException, UnknownHostException {
-		byte[] waitforMove = new byte[100];
-		DatagramPacket movement = new DatagramPacket(waitforMove, waitforMove.length);
-		try {
-			sendReceiveSocket.receive(movement);
-			System.out.println("Received message: elevator is moving up a floor");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		// Byte 3 signifies elevator has moved up a floor
-		if (waitforMove[0] == (byte)3)
-			notifyScheduler();
-		
-		//pause(); // Or sleep to be consistent whilst getting rid of function overhead
-	}
-	
-	/**
-	 * After the thread sleeps for 8 seconds, sends packet to scheduler it is approaching
-	 * the next floor on port 45
-	 * @param
-	 * @return 
-	 */
-	private void notifyScheduler() throws InterruptedException, UnknownHostException {
-		Thread.sleep(8000);
-		try {
-			byte[] floortofloor = new byte[]{4};
-			DatagramPacket packet = new DatagramPacket(floortofloor, floortofloor.length, InetAddress.getLocalHost(), 45 );
-			sendReceiveSocket.send(packet);
-			sendReceiveSocket.close();
-		}	catch (IOException e) {
-				e.printStackTrace();
-		}
-	}
-		
-			
-//	/**
-//	 * 
-//	 * 
-//	 * @param
-//	 * @return 
-//	 */
-//	public void stopElevator() {
-//		byte[] stopelevator = new byte[] { 3 };
-//
-//		try {
-//			DatagramPacket stop = new DatagramPacket(stopelevator, stopelevator.length, InetAddress.getLocalHost(), 45);
-//			System.out.println("Stopping elevator");
-//			this.sendReceiveSocket.send(stop);
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//	}
-
-//	static void pause() {
-//		long Time0 = System.currentTimeMillis();
-//		long Time1;
-//		long runTime = 0;
-//		while (runTime < 9000) {
-//			Time1 = System.currentTimeMillis();
-//			runTime = Time1 - Time0;
-//		}
-//	}
-	
-	/**
-	 * Starts both floor send/receive threads, calling the run method
-	 * @param
-	 * @return 
-	 */
-	public void start()
-	{
-		this.sendThread.start();
-		this.sendReceiveThread.start();
-	}
 	
 	/**
 	 * Executes the both send and receive threads
@@ -213,18 +134,8 @@ public class Floor implements Runnable {
 	 */
 	@Override
 	public void run() {
-		if(Thread.currentThread().getName().equals("sendThread"))
-		{
+		if (Thread.currentThread().getName().equals("sendThread"))
 			this.send();
-		}
-		else
-		{
-			try {
-				this.receiveElevatorMovement();
-			} catch (InterruptedException | UnknownHostException e) {
-				e.printStackTrace();
-			}
-		}
 	}
 
 	/**
@@ -233,7 +144,6 @@ public class Floor implements Runnable {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Floor floor = new Floor();
-		floor.start();
+		new Floor();
 	}
 }

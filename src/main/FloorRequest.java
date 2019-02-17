@@ -9,11 +9,8 @@ import java.sql.Timestamp;
  * The Class FloorRequest used to instantiate a request to move the elevator
  */
 public class FloorRequest implements Serializable {
-
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
+	
 	public Timestamp timestamp; 		// timestamp of request
 	public int floor, 				// origin of request
 			   carButton; 			// destination of request
@@ -27,7 +24,6 @@ public class FloorRequest implements Serializable {
 		this.floor = floor;
 		this.carButton = carButton;
 		this.floorButton = floorButton;
-
 	}
 
 	/**
