@@ -45,8 +45,11 @@ public class ElevatorTest {
 			e1.printStackTrace();
 		}
 	}
+	
 	/**
-	 * 
+	 *Mimics the scheduler sending
+	 *a message instructing an elevator 
+	 *to stat moving 
 	 */
 	public void sendMove() {
 		//mimic sending of move message from scheduler to elevator
@@ -64,8 +67,10 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 	}
+	
 	/**
-	 * Sending a made-up request to  elevator port 10
+	 * Mimics the scheduler sending a floor request
+	 * to an elevator instance
 	 */
 	public void sendRequest()
 	{
@@ -85,8 +90,12 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 	}
+	
 	/**
-	 * Sending the registration to the elevator port 10
+	 * Mimics a personalized scheduler thread
+	 * notifying an elevator about which port
+	 * number to send all further communications
+	 * with scheduler to
 	 */
 	public void sendRegistrationConfirmed()
 	{
@@ -104,10 +113,10 @@ public class ElevatorTest {
 			e.printStackTrace();
 		}
 	}
+	
 	/**
-	 * Closing door when a floor request is serviced
-	 * sending the packet to scheduler letting it know 
-	 * it has closed the doors
+	 *Mimic the Scheduler instructing
+	 *an elevator to close it's doors
 	 */
 	public void sendDoorClose()
 	{
@@ -127,8 +136,9 @@ public class ElevatorTest {
 	}
 	
 	/**
-	 * Receiving the packet for registration of elevator to port 10 from scheduler
-	 * confirming the packet
+	 * Test that an elevator instance correctly
+	 * sends a message making itself known 
+	 * to the scheduler subsystem after initialization
 	 */
 	@Test
 	public void testRegistration()
@@ -163,8 +173,9 @@ public class ElevatorTest {
 	}
 	
 	/**
-	 * Receiving the registration packet with the ready to move message
-	 * Testing the current floor of 0, destination 8 and going up direction
+	 * Test that an elevator instance correctly receives
+	 * a request, process it and notify scheduler that 
+	 * it is ready to start moving
 	 */
 	@Test
 	public void testReceiveRequest()
@@ -210,7 +221,12 @@ public class ElevatorTest {
 		
 	}
 	/**
-	 * Receive close door packet
+	 * Test that an elevator instance 
+	 * correctly receives a close door 
+	 * msg/command from scheduler and 
+	 * proceed to close it's doors and
+	 * notify scheduler that they are now 
+	 * closed 
 	 */
 	@Test
 	public void testDoorClose()
@@ -247,8 +263,25 @@ public class ElevatorTest {
 	}
 	
 	/**
-	 * Test case to combine all operations of registering elevator message
-	 * , closing doors and sending a request from floor 8 to 3
+	 * Testing the sequence of an elevator
+	 * 1)making itself known to the scheduler subsytem.
+	 * 2)Scheduler subsystem assigning it a new port to
+	 *   send all new messages
+	 * 3)An elevator receiving the close door command 
+	 *  and closing it's doors and notifying the 
+	 *  scheduler subsystem that doors are now closed
+	 * 4)An elevator receiving a request from the
+	 *   scheduler subystem, correctly processing it
+	 *   and notifying the scheduler that it is ready 
+	 *   to start moving
+	 * 5)An elevator receives a move msg/command from
+	 *   the scheduler subsystem and starts moving 
+	 *   whilst also notifying the scheduler every
+	 *   time it approaches a new floor
+	 * 6)An elevator notifies the scheduler 
+	 *   that it is approaching floor 1 and 
+	 *   the scheduler stops it at floor
+	 *   to answer a pending request
 	 */
 	@Test
 	public void testElevatorMoveAndStopped()

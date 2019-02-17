@@ -74,16 +74,12 @@ public class Scheduler implements Runnable{
 			DatagramPacket packet = new DatagramPacket(elevatorMsg, elevatorMsg.length);
 			
 			try {
-				System.out.println("Waiting for message from elevator");
 				this.receiveElevatorSocket.receive(packet);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 				continue; //@TODO get rid of and do better handling
 			}
-			
-			System.out.println("Elevator message received for register elevator");
-			System.out.println(Arrays.toString(elevatorMsg));
 			
 			switch(elevatorMsg[0])
 			{
@@ -131,7 +127,6 @@ public class Scheduler implements Runnable{
 				byte[] actualMsg = Arrays.copyOfRange(floorMsg, 1, packet.getLength());
 				//adding new request to front of requests linked list
 				FloorRequest r = (FloorRequest) FloorRequest.getObjectFromBytes(actualMsg);
-				System.out.println(r.floorButton);
 				if(r.floorButton.equals("up"))
 				{
 					this.addUpRequest(r);
@@ -156,7 +151,6 @@ public class Scheduler implements Runnable{
 	{
 		synchronized(this.downRequests)
 		{
-			System.out.println("adding to down request");
 			this.downRequests.set(request.floor,request);
 			this.downRequests.notifyAll();
 		}
@@ -176,7 +170,6 @@ public class Scheduler implements Runnable{
 		synchronized(this.upRequests)
 		{
 			this.upRequests.set(request.floor,request);
-			System.out.println("Added to up list floor request with floor " + request.floor);
 			this.upRequests.notifyAll();
 		}
 	}	
@@ -188,6 +181,7 @@ public class Scheduler implements Runnable{
 	 */
 	public void start()
 	{
+		System.out.println("Scheduler started");
 		this.floorMsgThread.start();
 		this.elevatorMsgThread.start();
 	}

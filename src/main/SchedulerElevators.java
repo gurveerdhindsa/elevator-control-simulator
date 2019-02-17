@@ -327,6 +327,10 @@ public class SchedulerElevators implements Runnable{
 				break;
 			
 			case 9: //stopped
+				System.out.println("Scheduler-> Elevator with port:" + this.elevPortNumber
+						+ " is now stopped with doors Open");
+				System.out.println("Scheduler-> Instructing Elevator with port:" + 
+						this.elevPortNumber + " to close it's doors");
 				sendDoorClose();
 				break;
 			
@@ -415,10 +419,12 @@ public class SchedulerElevators implements Runnable{
 		switch(msg[1])
 		{
 		case 0:
+			System.out.println("Scheduler-> Elevator with port:" + this.elevPortNumber
+					+ " has arrived at floor:" + this.currentFloor
+					+ " and is now stationary. Finding pending request to assign to it");
 			this.currentRequest = this.checkUpRequests(this.currentFloor);
 			if(this.currentRequest == null)
 			{
-				System.out.println("Scheduler: " + Thread.currentThread().getName()+ " checking down req");
 				this.currentRequest = this.checkDownRequests(this.topFloor);
 				
 				if(this.currentRequest == null)
@@ -428,6 +434,10 @@ public class SchedulerElevators implements Runnable{
 			}
 			break;
 		case 1:
+			System.out.println("Scheduler-> Elevator with port:" + this.elevPortNumber
+					+ " has arrived at floor:" + this.currentFloor
+					+ " and needs to keep moving to drop passenger "
+					+ "at floor:" + msg[2]);
 			this.currentRequest = this.getUpCurrentFloorRequest(this.currentFloor);
 			break;
 		}
@@ -494,8 +504,8 @@ public class SchedulerElevators implements Runnable{
 		   currentFloor--;
 		}
 		
-		System.out.println("Scheduler -> Elevator with port:" + this.elevPortNumber
-				+ " now at floor:" + this.currentFloor);
+		System.out.println("Scheduler-> Elevator with port:" + this.elevPortNumber
+				+ " now approaching floor:" + this.currentFloor);
 	}
 	
 	/**
@@ -608,7 +618,7 @@ public class SchedulerElevators implements Runnable{
 					InetAddress.getLocalHost(),this.elevPortNumber);
 			this.sendElevatorSocket.send(elevatorStopPckt);
 			
-			System.out.println("Scheduler -> stopping Elevator with port:" + this.elevPortNumber
+			System.out.println("Scheduler-> stopping Elevator with port:" + this.elevPortNumber
 					+ " to pick up passenger at:" + this.currentFloor
 					+ " going " + this.currentRequest.floorButton + " to:" + 
 					this.currentRequest.carButton);

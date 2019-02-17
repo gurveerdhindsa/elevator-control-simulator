@@ -54,7 +54,13 @@ public class SchedulerElevatorsTest {
 		this.scheduler.stop();
 	}
 	
-	
+	/**
+	 * Mimics the incoming of a request to the
+	 * scheduler subsystem
+	 * @param list: the queue in which to put the request
+	 * @param request: the FloorRequest instance representing
+	 *               the request
+	 */
 	public void inputRequest(List<FloorRequest>list, FloorRequest request)
 	{
 		synchronized(list)
@@ -64,6 +70,10 @@ public class SchedulerElevatorsTest {
 		}
 	}
 	
+	/**
+	 * Makes current thread sleep for a certain time
+	 * @param time
+	 */
 	public void waitms(int time)
 	{
 		try {
@@ -74,7 +84,13 @@ public class SchedulerElevatorsTest {
 		}
 	}
 	
-	
+	/**
+	 * Mimics an elevator sending 'ready to start moving' msg
+	 * to scheduler after processing a request
+	 * @param currentFloor: the currentfloor the elevator instance is at
+	 * @param destinationFloor: the destinationfloor it plans to start moving to
+	 * @param direction: the direction it has to move to get to destinationfloor
+	 */
 	public void sendReady(int currentFloor, int destinationFloor, int direction)
 	{
 		byte[] elevReady = new byte[] {5, (byte)currentFloor, (byte)destinationFloor,
@@ -95,6 +111,10 @@ public class SchedulerElevatorsTest {
 		
 	}
 	
+	/**
+	 * Mimics an elevator notifying the scheduler that 
+	 * it's doors are now closed
+	 */
 	public void sendDoorClosed()
 	{
 		//mimic sending door close from scheduler side
@@ -112,6 +132,13 @@ public class SchedulerElevatorsTest {
 		} 
 	}
 	
+	/**
+	 * creates a request
+	 * @param floor: the floor at which the request is being made
+	 * @param carButton: the destination floor the passenger wants to go to
+	 * @param direction: the direction(up or down)
+	 * @return a FloorRequest instance containing all the information
+	 */
 	public FloorRequest createRequest(int floor, int carButton, String direction)
 	{
 		Timestamp timestamp = null;

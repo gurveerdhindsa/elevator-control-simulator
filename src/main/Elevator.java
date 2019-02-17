@@ -55,6 +55,7 @@ public class Elevator implements Runnable{
 			System.out.println("Elevator not created");
 		}
 	}
+	
 	/**
 	 * Synchronizes the setting of the 
 	 * direction field of an elevator
@@ -65,6 +66,7 @@ public class Elevator implements Runnable{
 		this.direction = (this.destinationFloor - this.currentFloor)/
 				Math.abs(this.destinationFloor - this.currentFloor);
 	}
+	
 	/**
 	 * Adds a floor number to the list of pending
 	 * destinations the elevator instance as to visit
