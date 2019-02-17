@@ -35,7 +35,6 @@ public class FloorTest {
 			public void run()
 			{
 				Floor floor = new Floor();
-				floor.start();
 			}
 		});
 		
