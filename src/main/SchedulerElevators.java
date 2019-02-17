@@ -650,7 +650,6 @@ public class SchedulerElevators implements Runnable{
 	public void run() {
 		// TODO Auto-generated method stub
 		this.start();
-		
 	}
 	
 	public void stop()
