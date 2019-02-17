@@ -63,7 +63,7 @@ public class FloorTest {
 			}
 		    timestamp = new Timestamp(parsedDate.getTime());
 			assertTrue(result.timestamp.equals(timestamp));
-			assertTrue(result.floorButton.equals("Up"));
+			assertTrue(result.floorButton.equalsIgnoreCase("Up"));
 			
 			getRegist.close();
 		} catch (IOException e) {
