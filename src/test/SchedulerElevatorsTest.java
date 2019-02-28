@@ -28,7 +28,8 @@ public class SchedulerElevatorsTest {
 	private int elevatorPortNum;
 	private int assignedPortNum;
 	private Thread schedulerThread;
-	
+	private Timestamp floorTime;
+	private Timestamp doorTime;
 	
 	@Before
 	public void setUp()
@@ -148,13 +149,19 @@ public class SchedulerElevatorsTest {
 		try {
 			parsedDate = dateFormat.parse("14:05:15.0");
 			timestamp = new Timestamp(parsedDate.getTime());
+			
+			 Date f = dateFormat.parse("00:00:08.0");
+			 floorTime = new Timestamp(f.getTime());
+			    
+			    Date door = dateFormat.parse("00:00:02.0");
+			    doorTime = new Timestamp(door.getTime());
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}
 		
-	   FloorRequest request = new FloorRequest(timestamp,floor,carButton,direction);
+	   FloorRequest request = new FloorRequest(timestamp,floor,carButton,direction , floorTime, doorTime);
 	   return request;
 	}
 	

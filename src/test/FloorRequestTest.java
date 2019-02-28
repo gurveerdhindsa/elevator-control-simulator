@@ -21,6 +21,9 @@ public class FloorRequestTest {
 	    carButton = 4;
 	String floorButton = "Up";
 	
+	public Timestamp floorTime;
+	public Timestamp doorTime;
+	
 	
 	@Before
 	public void initialize() {
@@ -28,11 +31,18 @@ public class FloorRequestTest {
 		    SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
 		    Date parsedDate = dateFormat.parse("14:05:15.0");
 		    timestamp = new Timestamp(parsedDate.getTime());
+		    
+		    Date floor = dateFormat.parse("00:00:08.0");
+		    floorTime = new Timestamp(floor.getTime());
+		    
+		    Date door = dateFormat.parse("00:00:02.0");
+		    doorTime = new Timestamp(door.getTime());
+		    
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
 	    
-	    fr = new FloorRequest(timestamp, floor, carButton, floorButton);
+	    fr = new FloorRequest(timestamp, floor, carButton, floorButton, floorTime, doorTime);
 	}
 
 	@Test
