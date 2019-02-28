@@ -12,6 +12,8 @@ public class FloorRequest implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	public Timestamp timestamp; 		// timestamp of request
+	public Timestamp floorTime;		// time required to traverse each floor
+	public Timestamp doorTime;		// time required to close elevator door 
 	public int floor, 				// origin of request
 			   carButton; 			// destination of request
 	public String floorButton; 		// direction of request
@@ -19,11 +21,13 @@ public class FloorRequest implements Serializable {
 	/**
 	 * Constructor for class FloorRequest
 	 */
-	public FloorRequest(Timestamp timestamp, int floor, int carButton, String floorButton) {
+	public FloorRequest(Timestamp timestamp, int floor, int carButton, String floorButton, Timestamp floorTime, Timestamp doorTime) {
 		this.timestamp = timestamp;
 		this.floor = floor;
 		this.carButton = carButton;
 		this.floorButton = floorButton;
+		this.floorTime = floorTime;
+		this.doorTime = doorTime;
 	}
 
 	/**
