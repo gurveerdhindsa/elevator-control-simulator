@@ -287,6 +287,15 @@ public class SchedulerElevators implements Runnable{
 			switch(msg[0])
 			{
 			case 3: //door closed
+				
+				//ITERATION 3: HANDLING FLOOR TO FLOOR TIMER ERROR CASE
+				//set a timeout for receiving a sensor message from elevator after receiving previous sensor message
+				//timeout = FloorRequest.floorTimer
+				
+				//if sensor message has not been received from elevator within the set timeout,
+				//Hard Fault: Shut down corresponding elevator 
+				//not sure how to do this, since each elevator is not a separate thread
+				
 				if(this.currentRequest != null)
 				{
 					sendRequest();
@@ -545,6 +554,14 @@ public class SchedulerElevators implements Runnable{
 			e.printStackTrace();
 		}
 		
+		//ITERATION 3: HANDLING FLOOR TO FLOOR TIMER ERROR CASE
+		//set a timeout for receiving a sensor message from elevator after sending move command
+		//timeout = FloorRequest.floorTimer
+		
+		//if sensor message has not been received from elevator within the set timeout,
+		//Hard Fault: Shut down corresponding elevator 
+		//not sure how to do this, since each elevator is not a separate thread
+		
 	}
 	
 	/**
@@ -643,6 +660,13 @@ public class SchedulerElevators implements Runnable{
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		//ITERATION 3: HANDLING DOOR CLOSE ERROR CASE
+		//set a timeout for receiving a door closed message from elevator after sending door close command
+		//timeout = FloorRequest.doorCloseTimer
+		
+		//if door closed message has not been received from elevator within the set timeout,
+		//gracefully handle the situation by sending a door close command again (call this.sendDoorClose() again?)
 	}
 	
 
