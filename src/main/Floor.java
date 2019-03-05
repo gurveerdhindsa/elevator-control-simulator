@@ -89,11 +89,11 @@ public class Floor implements Runnable {
 						e.printStackTrace();
 					}
 				} else if (input.isEmpty() && timestamp != null && !floorButton.isEmpty()) {
-					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime, doorTime));
+					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime.getTime(), doorTime.getTime()));
 				}
 			}
 			if (timestamp != null) {
-				floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime, doorTime));
+				floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime.getTime(), doorTime.getTime()));
 			}
 			
 		} catch (IOException e) {

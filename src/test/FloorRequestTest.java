@@ -42,7 +42,7 @@ public class FloorRequestTest {
 			e.printStackTrace();
 		}
 	    
-	    fr = new FloorRequest(timestamp, floor, carButton, floorButton, floorTime, doorTime);
+	    fr = new FloorRequest(timestamp, floor, carButton, floorButton, floorTime.getTime(), doorTime.getTime());
 	}
 
 	@Test
