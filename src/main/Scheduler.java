@@ -109,11 +109,12 @@ public class Scheduler implements Runnable{
 		while(true)
 		{
 			//listen for message
-			byte []floorMsg = new byte[300];
+			byte []floorMsg = new byte[350];
 			DatagramPacket packet = new DatagramPacket(floorMsg, floorMsg.length);
 			
 			try {
 				this.receiveFloorSocket.receive(packet);
+				//System.out.println("got floor request with length " + packet.getLength());
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

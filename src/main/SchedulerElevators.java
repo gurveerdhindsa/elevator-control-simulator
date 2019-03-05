@@ -22,6 +22,14 @@ public class SchedulerElevators implements Runnable{
 	private int direction; // 1 is up -1 is down
 	private DatagramSocket receiveElevatorSocket;
 	private DatagramSocket sendElevatorSocket;
+	private long startTime;
+	private long startTimeReady;
+	private long endTime;
+	
+	private boolean useDoorTime;
+	
+	private static Long total = new Long(0);
+	private static int count;
 	
 	/**
 	 * Creates a runnable instance with a single thread
@@ -295,6 +303,14 @@ public class SchedulerElevators implements Runnable{
 				//if sensor message has not been received from elevator within the set timeout,
 				//Hard Fault: Shut down corresponding elevator 
 				//not sure how to do this, since each elevator is not a separate thread
+				long endTime = System.nanoTime();
+				System.out.println("Door close Time -> " + (endTime - this.startTime));
+				synchronized(SchedulerElevators.total)
+				{
+					SchedulerElevators.total = SchedulerElevators.total.longValue() + (endTime - this.startTime);
+					SchedulerElevators.count++;
+					System.out.println("total is " + SchedulerElevators.total + " count " + SchedulerElevators.count);
+				}
 				
 				if(this.currentRequest != null)
 				{
@@ -322,7 +338,10 @@ public class SchedulerElevators implements Runnable{
 				break;
 			
 			case 7: //arrival sensor
+				long endtime = System.nanoTime();
+				System.out.println("Arrival elasped time -> " + (endtime - this.startTimeReady));
 				this.updateCurrentFloor();
+				this.startTimeReady = System.nanoTime();
 				//not special case & direction up
 				if(msg[2] != 1 && msg[1] == 1)
 				{
@@ -353,6 +372,14 @@ public class SchedulerElevators implements Runnable{
 					this.handleDownArrival(msg);
 				}
 				sendDoorClose();
+				break;
+			
+			case 12: // resend door close
+				//set discard next receive doorclosed
+				//sendDoorclose
+				break;
+			
+			case 13: //send shutdown to elevator
 				break;
 			
 			default:
@@ -529,7 +556,10 @@ public class SchedulerElevators implements Runnable{
 		//1 up 0 down
 		this.currentRequest = this.initialList == 1 ? checkInitialUp(0) : checkInitialDown(19);
 		//send door close
-		sendDoorClose();	
+		sendDoorClose();
+		
+		//timer = new Thread(this, name)
+		//timer.start()
 		// call workerFunction()
 		workerFunction();
 	}
@@ -548,6 +578,9 @@ public class SchedulerElevators implements Runnable{
 			System.out.println("Scheduler-> Instructing Elevator with port:" + this.elevPortNumber
 					+ " to start moving");
 			this.sendElevatorSocket.send(request);
+			this.useDoorTime = false;
+			//start timer thread;
+			this.startTimeReady = System.nanoTime();
 		}
 		catch(IOException e)
 		{
@@ -562,6 +595,21 @@ public class SchedulerElevators implements Runnable{
 		//Hard Fault: Shut down corresponding elevator 
 		//not sure how to do this, since each elevator is not a separate thread
 		
+	}
+	
+	public void timer()
+	{
+		try
+		{
+			Thread.sleep(this.useDoorTime == true ? (long)this.currentRequest.doorTime : (long)this.currentRequest.floorTime);
+			//if it wakes up 
+			//send a message to port(this.assignedPort)
+			byte msg [] = new byte [] { this.useDoorTime == true ? (byte)12 : (byte)13};
+		}
+		catch(InterruptedException e)
+		{
+			
+		}
 	}
 	
 	/**
@@ -656,7 +704,11 @@ public class SchedulerElevators implements Runnable{
 			DatagramSocket sendDoorClose = new DatagramSocket();
 			DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, InetAddress.getLocalHost(),elevPortNumber);
 			sendDoorClose.send(doorClosePkt);
+			this.useDoorTime = true;
+			//start timer thread.
+			this.startTime = System.nanoTime();
 			sendDoorClose.close();
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

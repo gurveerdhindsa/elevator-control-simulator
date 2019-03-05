@@ -3,28 +3,28 @@ Floor:2
 Floor Button:Up
 Car Button:4
 Floor Time: 00:00:08.0
-Door Time: 00:00:02.0
+Door Time: 00:00:00.2
 
 Time:14:05:15.0
 Floor:3
 Floor Button:Up
 Car Button:7
 Floor Time: 00:00:08.0
-Door Time: 00:00:02.0
+Door Time: 00:00:00.2
 
 Time:14:05:15.0
 Floor:4
 Floor Button:Down
 Car Button:0
 Floor Time: 00:00:08.0
-Door Time: 00:00:02.0
+Door Time: 00:00:00.2
 
 Time:14:05:15.0
 Floor:9
 Floor Button:Up
 Car Button:12
 Floor Time: 00:00:08.0
-Door Time: 00:00:02.0
+Door Time: 00:00:00.2
 
 Time:14:05:15.0
 Floor:10
