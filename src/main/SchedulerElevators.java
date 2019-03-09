@@ -29,7 +29,6 @@ public class SchedulerElevators implements Runnable{
 
 	
 	private boolean useDoorTime;
-	private boolean discardNextReceived;
 	
     private Thread timer;
 	
@@ -60,7 +59,6 @@ public class SchedulerElevators implements Runnable{
 		this.initialList = initList;
 		this.direction = this.initialList == 1 ? 1 : -1;
 		this.topFloor = 19; // remove hard-coded value
-		this.discardNextReceived = false;
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(assignedPort);
 			this.sendElevatorSocket = new DatagramSocket();
@@ -139,9 +137,11 @@ public class SchedulerElevators implements Runnable{
 			{
 				FloorRequest req = this.up.get(floor);
 				this.up.set(floor, new FloorRequest());
+				System.out.println("got a request for floor" + floor);
 				return req;
 			}
 		}
+		System.out.println("Returning null");
 		return null;
 	  }
 	
@@ -282,9 +282,14 @@ public class SchedulerElevators implements Runnable{
 	 */
 	public void workerFunction()
 	{
+		boolean breakOut = false;
 		Random generator = new Random();
 		while(true)
 		{
+			if(breakOut)
+			{
+				break;
+			}
 			byte[] msg = new byte[100];
 			//listen for elevator message	
 			try {
@@ -299,11 +304,8 @@ public class SchedulerElevators implements Runnable{
 			switch(msg[0])
 			{
 			case 3: //door closed
-				if(this.discardNextReceived) {
-					this.discardNextReceived = false;
-				}
 				
-				else if(this.currentRequest != null)
+				if(this.currentRequest != null)
 				{
 					//interrupt timer
 					timer.interrupt();
@@ -329,13 +331,13 @@ public class SchedulerElevators implements Runnable{
 			
 			case 5: // ready
 				this.direction = msg[3];
+				this.destinationFloor = msg[2];
 				sendMove();
 				break;
 			
 			case 7: //arrival sensor
 				//not special case & direction up
 				this.timer.interrupt();
-				this.startTime = System.nanoTime();
 				this.updateCurrentFloor();
 				if(msg[2] != 1 && msg[1] == 1)
 				{
@@ -387,6 +389,7 @@ public class SchedulerElevators implements Runnable{
 			case 13: //send shutdown to elevator
 				System.out.println("Shutting down elevator with port " + this.elevPortNumber);
 				byte [] crash = new byte [] {14};
+				breakOut = true;
 				try {
 					DatagramPacket request = new DatagramPacket(crash, crash.length, InetAddress.getLocalHost(), this.elevPortNumber);
 					DatagramSocket timerSocket = new DatagramSocket();
@@ -493,6 +496,7 @@ public class SchedulerElevators implements Runnable{
 					+ " and needs to keep moving to drop passenger "
 					+ "at floor:" + msg[2]);
 			this.currentRequest = this.getUpCurrentFloorRequest(this.currentFloor);
+			System.out.println("Request should be empty now " + this.currentRequest);
 			break;
 		}
 	}
@@ -509,7 +513,6 @@ public class SchedulerElevators implements Runnable{
 	 */
 	public void handleUp8s()
 	{
-		long starttime = System.nanoTime();
 		if(this.currentFloor != this.destinationFloor)
 		{
 			this.currentRequest = getUpCurrentFloorRequest(this.currentFloor);

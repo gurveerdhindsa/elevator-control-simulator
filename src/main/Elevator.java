@@ -155,6 +155,7 @@ public class Elevator implements Runnable{
 	        case 14:
 	        	this.motorThread.interrupt();
 	        	this.sensorThread.interrupt();
+	        	this.closeDoor.interrupt();
 	        	breakOut = true;
 	        	break;
 	        
@@ -252,6 +253,7 @@ public class Elevator implements Runnable{
 	public void updateDestination()
 	{
 		this.destinationFloor = this.pendingDestinations.removeFirst();
+		System.out.println("destination is " + this.destinationFloor);
 		this.setDirection();
 		this.sensorCount = Math.abs(this.currentFloor - this.destinationFloor);
 	}
@@ -567,7 +569,6 @@ public class Elevator implements Runnable{
 		Elevator e = new Elevator(70);
 		e.start();
 		
-		/*
 		Elevator e1 = new Elevator(71);
 		e1.start();
 		
@@ -575,6 +576,6 @@ public class Elevator implements Runnable{
 		e2.start();
 		
 		Elevator e3 = new Elevator(73);
-		e3.start();*/
+		e3.start();
 	}
 }
