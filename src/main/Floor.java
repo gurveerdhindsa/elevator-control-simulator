@@ -52,7 +52,8 @@ public class Floor implements Runnable {
 	public void importConfiguration() {
 		try (BufferedReader br = new BufferedReader(new FileReader("src/configuration/configuration.txt"))) {
 			String input = null;
-			Timestamp timestamp = null, floorTime = null, doorTime = null;
+			Timestamp timestamp = null;
+			long floorTime = 0, doorTime = 0;
 			int floor = 0, carButton = 0;
 			String floorButton = null;
 
@@ -73,27 +74,15 @@ public class Floor implements Runnable {
 				} else if (inputFields[0].equals("Floor Button")) {
 					floorButton = inputFields[1].trim().toLowerCase();
 				} else if (inputFields[0].equals("Floor Time")) {
-					try {
-						SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
-						Date parsedDate = dateFormat.parse(inputFields[1]);
-						floorTime = new Timestamp(parsedDate.getTime());
-					} catch (ParseException e) {
-						e.printStackTrace();
-					}
-				} else if (inputFields[0].equals("Door Time")) {
-					try {
-						SimpleDateFormat dateFormat = new SimpleDateFormat("hh:mm:ss.SSS");
-						Date parsedDate = dateFormat.parse(inputFields[1]);
-						doorTime = new Timestamp(parsedDate.getTime());
-					} catch (ParseException e) {
-						e.printStackTrace();
-					}
+					floorTime = Long.parseLong(inputFields[1]);
+				} else if (inputFields[0].equals("Door Time")) {;
+					doorTime = Long.parseLong(inputFields[1]);
 				} else if (input.isEmpty() && timestamp != null && !floorButton.isEmpty()) {
-					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime.getTime(), doorTime.getTime()));
+					floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime, doorTime));
 				}
 			}
 			if (timestamp != null) {
-				floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime.getTime(), doorTime.getTime()));
+				floorRequests.add(new FloorRequest(timestamp, floor, carButton, floorButton, floorTime, doorTime));
 			}
 			
 		} catch (IOException e) {
@@ -124,7 +113,7 @@ public class Floor implements Runnable {
 				// Create datagram packet to send
 				packet = new DatagramPacket(request, request.length, InetAddress.getLocalHost(), 45);
 				System.out.println(new SimpleDateFormat("hh:mm:ss.SSS").format(floorRequest.timestamp) + ": Passenger request to go " + floorRequest.floorButton.toLowerCase() + " from floor " + floorRequest.floor + " to " + floorRequest.carButton);
-
+				System.out.println("FloorTime: " + floorRequest.floorTime + " doorTime " + floorRequest.doorTime);
 				sendReceiveSocket.send(packet);
 				try {
 					Thread.sleep(1700);

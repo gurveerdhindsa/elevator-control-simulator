@@ -26,9 +26,11 @@ public class Elevator implements Runnable{
 	private LinkedList<Integer>pendingDestinations;
 	private int assignedSchedulerPort, currentFloor, destinationFloor, portNumber,
 	            direction; // 1 is up -1 is down
-	private boolean firstRequest, doorsOpen;   //false = door closed ;
+	private boolean doorsOpen;   //false = door closed ;
 	private int sensorCount, //sensorCount how many times to do 8s notification
 	                    specialCase; //special movement with no 8s notification
+	private long currentFloorTime, currentDoorTime;
+	private Thread closeDoor;
 	                                     
 	
 	/**
@@ -44,7 +46,6 @@ public class Elevator implements Runnable{
 		this.messageThread = new Thread(this, "messageThread");
 		this.pendingDestinations = new LinkedList<>();
 		this.doorsOpen = true;
-		this.firstRequest = true;
 		this.sensorCount = 0;
 	
 		try {
@@ -74,7 +75,6 @@ public class Elevator implements Runnable{
 	 */
 	private void addPendingDest(int destination)
 	{
-		
 		if(this.pendingDestinations.contains(destination))
 		{
 			return;
@@ -99,11 +99,12 @@ public class Elevator implements Runnable{
 	 */
 	private void processorFunction()
 	{	
+		boolean breakOut = false;
 		while(true)
 		{
-			if(Thread.currentThread().isInterrupted())
+			if(breakOut)
 			{
-				return;
+				break;
 			}
 			byte data[] = new byte[100];
 		    DatagramPacket receivePckt = new DatagramPacket(data, data.length);
@@ -122,7 +123,9 @@ public class Elevator implements Runnable{
 	        	break;
 	        
 	        case 2:
-	        	handleDoorClose(); // close doors
+	        	this.closeDoor = new Thread(this,"closeDoor");
+	        	this.currentDoorTime = data[1];
+	        	this.closeDoor.start();
 	        	break;
 	        
 	        case 4:
@@ -147,6 +150,19 @@ public class Elevator implements Runnable{
 	        case 11: //update pending destination
 	        	updateDestination();
 	        	sendReady();
+	        	break;
+	        
+	        case 14:
+	        	this.motorThread.interrupt();
+	        	this.sensorThread.interrupt();
+	        	breakOut = true;
+	        	break;
+	        
+	        case 15:
+	        	this.closeDoor.interrupt();
+	        	this.closeDoor = new Thread(this, "closeDoor");
+	        	this.currentDoorTime = data[1];
+	        	this.closeDoor.start();
 	        	break;
 	        	
 			default:
@@ -206,6 +222,12 @@ public class Elevator implements Runnable{
 		this.doorsOpen = false;
 		byte[] doorClosedMsg = new byte[] {3}; // sends a byte 3 back to the scheduler, letting it know doors are closed
 		try {
+			
+			long start = System.nanoTime();
+			long time = 500 + (this.currentDoorTime * 25);
+			System.out.println("elevator before sleep sleep time is" + this.currentDoorTime + " and time " + time);
+			Thread.sleep(time);
+			System.out.println("after sleep " + (System.nanoTime() - start));
 			DatagramPacket doorClosedPckt = new DatagramPacket(doorClosedMsg, 
 					doorClosedMsg.length, InetAddress.getLocalHost(),this.assignedSchedulerPort);
 			DatagramSocket doorClosedMsgSckt = new DatagramSocket();
@@ -216,6 +238,10 @@ public class Elevator implements Runnable{
 		} catch (IOException e)
 		{
 			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			System.out.println("Intrrupted close doors");
 		}
 	}
 	
@@ -241,27 +267,32 @@ public class Elevator implements Runnable{
 				" received request with contents:[");
 		System.out.println("FloorNum:" + data[1] + ", carButton:" + data[2]
 				+ ", direction:" + (data[3] == 1 ? "Up" : "Down") + "]");
-		if(this.currentFloor != data[1] || this.firstRequest) 
+		if(this.currentFloor != data[1] ) 
 		{
 			this.destinationFloor = data[1];
-			this.addPendingDest(data[2]);
-			this.firstRequest = false;
+			this.addPendingDest((int)data[2]);
+		}
+		else if(this.destinationFloor == data[1] || this.destinationFloor == data[2])
+		{
+			this.destinationFloor = data[2];
 		}
 		
 		else if(direction == 1) // elevator request is in upwards direction
 		{
-			this.addPendingDest(this.destinationFloor < data[2] ? data[2] : this.destinationFloor); // adds request to the linked list
+			this.addPendingDest(this.destinationFloor < data[2] ? (int)data[2] : this.destinationFloor); // adds request to the linked list
 			this.destinationFloor = this.destinationFloor < data[2] ? this.destinationFloor : data[2];	
 		}
 		else if(direction == -1) //elevator request in downwards direction
 		{
 			this.addPendingDest(this.destinationFloor < data[2] ? this.destinationFloor : data[2]);
-			this.destinationFloor = this.destinationFloor < data[2] ? data[2] : this.destinationFloor;
+			this.destinationFloor = this.destinationFloor < data[2] ? (int)data[2] : this.destinationFloor;
 		}
 		
 		this.setDirection();
 		this.sensorCount = Math.abs(this.currentFloor - this.destinationFloor); // calculate the difference between the curr floor and destination floor
 		this.specialCase = this.direction == data[3] ? this.specialCase : (this.specialCase | 0x00000001);
+		this.currentFloorTime = (long)data[4];
+		System.out.println("currentfloortime is now " + data[4]);
 		sendReady(); // send packet to scheduler ready to move
 	}
 	
@@ -356,11 +387,12 @@ public class Elevator implements Runnable{
 		
 		while(this.sensorCount > 0)
 		{
+			long time = 2800 + (this.currentFloorTime * 70);
 			try {
-				Thread.sleep(2000); // sleep for two seconds
+				Thread.sleep(time); // sleep for two seconds
 				sendSensorMsg(); // send packet to let scheduler know
 				this.sensorCount --;
-				Thread.sleep(500);
+				//Thread.sleep(500);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				//e.printStackTrace();
@@ -426,6 +458,7 @@ public class Elevator implements Runnable{
 	{
 		if (Thread.currentThread().getName().equals("messageThread")) {
 			this.processorFunction();
+			System.out.println("Elevator crashed");
 			
 		} else if (Thread.currentThread().getName().equals("motorThread")) {
 			this.mimicMovement();
@@ -433,6 +466,10 @@ public class Elevator implements Runnable{
 		else if(Thread.currentThread().getName().equals("sensorThread"))
 		{
 			this.sensorFunction();
+		}
+		else if(Thread.currentThread().getName().equals("closeDoor"))
+		{
+			this.handleDoorClose();
 		}
 		else {
 			this.start();
@@ -530,7 +567,7 @@ public class Elevator implements Runnable{
 		Elevator e = new Elevator(70);
 		e.start();
 		
-		
+		/*
 		Elevator e1 = new Elevator(71);
 		e1.start();
 		
@@ -538,6 +575,6 @@ public class Elevator implements Runnable{
 		e2.start();
 		
 		Elevator e3 = new Elevator(73);
-		e3.start();
+		e3.start();*/
 	}
 }
