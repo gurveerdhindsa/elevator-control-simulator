@@ -21,6 +21,7 @@ public class Scheduler implements Runnable{
 	private ArrayList<FloorRequest>downRequests;
 	private ArrayList<Integer>portNumbers;
 	private int initialRequestList;
+	private InetAddress communicator;
 	
 	/**
 	 * Constructor for the Scheduler
@@ -28,7 +29,7 @@ public class Scheduler implements Runnable{
 	 * messages/commands to and from floor, and the other 
 	 * to listen/send messages to and from elevator
 	 */
-	public Scheduler(int numberOfElevators, int basePortNumber)
+	public Scheduler(int numberOfElevators, int basePortNumber, InetAddress address)
 	{
 		this.floorMsgThread = new Thread(this,"floorThread");
 		this.elevatorMsgThread = new Thread(this, "elevatorThread"); 
@@ -37,6 +38,7 @@ public class Scheduler implements Runnable{
 		this.downRequests = new ArrayList<>();
 		this.portNumbers = new ArrayList<>();
 		this.initialRequestList = 1;
+		this.communicator = address;
 		
 		for(int i = 0; i < numberOfElevators; i++)
 		{
@@ -85,7 +87,8 @@ public class Scheduler implements Runnable{
 			{
 			case 0:
 				SchedulerElevators elevator = new SchedulerElevators(this.upRequests,
-						this.downRequests, elevatorMsg[4],this.portNumbers.remove(0),this.initialRequestList);
+						this.downRequests, elevatorMsg[4],this.portNumbers.remove(0),this.initialRequestList,
+						this.communicator);
 				this.initialRequestList = (this.initialRequestList + 1)%2;
 				this.elevators.add(elevator);
 				Thread elevThread = new Thread(elevator, "SchedulerElevator: " + this.elevators.size());
@@ -222,8 +225,16 @@ public class Scheduler implements Runnable{
 	 */
 	public static void main(String[] args) {
 
-	    Scheduler s = new Scheduler(4,46);
-	    s.start();
+		InetAddress ip;
+		try {
+			ip = InetAddress.getByName("134.117.59.103");
+			Scheduler s = new Scheduler(4,46,ip);
+		    s.start();
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    
 	    
 	}
 		
