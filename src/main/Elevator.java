@@ -6,6 +6,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -31,6 +32,7 @@ public class Elevator implements Runnable{
 	                    specialCase; //special movement with no 8s notification
 	private long currentFloorTime, currentDoorTime;
 	private Thread closeDoor;
+	private InetAddress schedulerAddr;
 	                                     
 	
 	/**
@@ -38,7 +40,7 @@ public class Elevator implements Runnable{
 	 * @param portNumber The Elevator 
 	 *  instance's portNumber on which to receive messages 
 	 */
-	public Elevator(int portNumber)
+	public Elevator(int portNumber, InetAddress addr)
 	{
 		this.portNumber = portNumber;
 		this.currentFloor = 0;
@@ -47,6 +49,7 @@ public class Elevator implements Runnable{
 		this.pendingDestinations = new LinkedList<>();
 		this.doorsOpen = true;
 		this.sensorCount = 0;
+		this.schedulerAddr = addr;
 	
 		try {
 			receiveSckt = new DatagramSocket(portNumber);
@@ -64,6 +67,10 @@ public class Elevator implements Runnable{
 	 */
 	public void setDirection()
 	{
+	   if(Math.abs(this.destinationFloor - this.currentFloor) == 0)
+	   {
+		   return;
+	   }
 		this.direction = (this.destinationFloor - this.currentFloor)/
 				Math.abs(this.destinationFloor - this.currentFloor);
 	}
@@ -205,7 +212,7 @@ public class Elevator implements Runnable{
 		
 		try {
 			DatagramPacket stoppedPckt = new DatagramPacket(stoppedMsg, stoppedMsg.length,
-					InetAddress.getLocalHost(), this.assignedSchedulerPort);
+					this.schedulerAddr, this.assignedSchedulerPort);
 			DatagramSocket stoppedMsgSckt = new DatagramSocket();
 			stoppedMsgSckt.send(stoppedPckt);
 			stoppedMsgSckt.close();
@@ -230,7 +237,7 @@ public class Elevator implements Runnable{
 			Thread.sleep(time);
 			System.out.println("after sleep " + (System.nanoTime() - start));
 			DatagramPacket doorClosedPckt = new DatagramPacket(doorClosedMsg, 
-					doorClosedMsg.length, InetAddress.getLocalHost(),this.assignedSchedulerPort);
+					doorClosedMsg.length, this.schedulerAddr,this.assignedSchedulerPort);
 			DatagramSocket doorClosedMsgSckt = new DatagramSocket();
 			doorClosedMsgSckt.send(doorClosedPckt);
 			System.out.println("Elevator with port:" + this.portNumber +
@@ -308,7 +315,7 @@ public class Elevator implements Runnable{
 		
 		try {
 			DatagramPacket elevatorReadyPckt = new DatagramPacket(elevatorReadyMsg, elevatorReadyMsg.length
-					,InetAddress.getLocalHost(), this.assignedSchedulerPort);
+					,this.schedulerAddr, this.assignedSchedulerPort);
 			DatagramSocket elevatorReadySckt = new DatagramSocket();
 			/*
 			System.out.println("Elevator wtih port:" + this.portNumber + " sending ReadyMsg with:["
@@ -337,7 +344,7 @@ public class Elevator implements Runnable{
 		try {
 			//later on need elevator to know host of and port of scheduler when being instantiated
 			DatagramPacket pck = new DatagramPacket(registerElev, registerElev.length, 
-					InetAddress.getLocalHost(),69);
+					this.schedulerAddr,69);
 			DatagramSocket soc = new DatagramSocket();
 			soc.send(pck);
 			soc.close();
@@ -366,7 +373,7 @@ public class Elevator implements Runnable{
 				(byte)this.currentFloor}; // creates packet to 
 		try {	
 			DatagramPacket sensorPckt = new DatagramPacket(sensorMsg, sensorMsg.length,
-					InetAddress.getLocalHost(), this.assignedSchedulerPort);
+					this.schedulerAddr, this.assignedSchedulerPort);
 			DatagramSocket sensorSckt = new DatagramSocket();
 			sensorSckt.send(sensorPckt);
 			System.out.println("Elevator with port:" + this.portNumber + " sending sensorMsg with["
@@ -425,7 +432,7 @@ public class Elevator implements Runnable{
 			arrivalMessage[3] = (byte)this.direction;
 			
 			DatagramPacket arrivalMsgPkt = new DatagramPacket(arrivalMessage, arrivalMessage.length,
-					InetAddress.getLocalHost(),this.assignedSchedulerPort);
+					this.schedulerAddr,this.assignedSchedulerPort);
 			DatagramSocket arrivalMsgSocket = new DatagramSocket();
 			arrivalMsgSocket.send(arrivalMsgPkt);
 			arrivalMsgSocket.close();
@@ -566,16 +573,24 @@ public class Elevator implements Runnable{
 	 */
 	public static void main(String[] args)
 	{
-		Elevator e = new Elevator(70);
-		e.start();
+		InetAddress addr;
+		try {
+			addr = InetAddress.getByName("134.117.59.101");
+			Elevator e = new Elevator(70,addr);
+			e.start();
+			
+			Elevator e1 = new Elevator(71,addr);
+			e1.start();
+			
+			Elevator e2 = new Elevator(72,addr);
+			e2.start();
+			
+			Elevator e3 = new Elevator(73,addr);
+			e3.start();
+		} catch (UnknownHostException e4) {
+			// TODO Auto-generated catch block
+			e4.printStackTrace();
+		}
 		
-		Elevator e1 = new Elevator(71);
-		e1.start();
-		
-		Elevator e2 = new Elevator(72);
-		e2.start();
-		
-		Elevator e3 = new Elevator(73);
-		e3.start();
 	}
 }
