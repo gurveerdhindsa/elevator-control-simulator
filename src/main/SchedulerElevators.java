@@ -27,11 +27,15 @@ public class SchedulerElevators implements Runnable{
 	private DatagramSocket sendElevatorSocket;
 	private FloorRequest lastRequest;
 	private InetAddress addr;
-
 	
 	private boolean useDoorTime;
-	
     private Thread timer;
+    public static long startDoorTime;
+    public static long totalDoorTime;
+    public static long startRequestTime;
+    public static long totalRequestTime;
+    public static long startMoveTime;
+    public static long totalFloorToFloorTime;
 	
 	/**
 	 * Creates a runnable instance with a single thread
@@ -308,10 +312,12 @@ public class SchedulerElevators implements Runnable{
 			case 3: //door closed
 				
 				if(this.currentRequest != null)
-				{
+				{	
+					totalDoorTime = System.nanoTime() - startDoorTime;
 					//interrupt timer
 					timer.interrupt();
 					sendRequest();
+					
 				}
 				else
 				{
@@ -332,12 +338,14 @@ public class SchedulerElevators implements Runnable{
 				break;
 			
 			case 5: // ready
+				totalRequestTime = System.nanoTime() - startRequestTime;
 				this.direction = msg[3];
 				this.destinationFloor = msg[2];
 				sendMove();
 				break;
 			
 			case 7: //arrival sensor
+				totalFloorToFloorTime = System.nanoTime() - startMoveTime;
 				//not special case & direction up
 				this.timer.interrupt();
 				this.updateCurrentFloor();
@@ -600,6 +608,7 @@ public class SchedulerElevators implements Runnable{
 					+ " to start moving");
 			this.timer = new Thread(this,"timerThread");
 			this.sendElevatorSocket.send(request);
+			startMoveTime = System.nanoTime();
 			this.useDoorTime = false;
 			this.startTime = System.nanoTime();
 			this.timer.start();
@@ -666,6 +675,7 @@ public class SchedulerElevators implements Runnable{
 					+ " Msg->[floorNum:" + msg[1] + ", carButton:" + msg[2] + ", direction:"
 					+ (msg[3] == 1 ? "up" : "down") + "]");
 			this.sendElevatorSocket.send(request);
+			startRequestTime = System.nanoTime();
 			this.lastRequest = this.currentRequest;
 			this.currentRequest = null;
 		}
@@ -737,6 +747,7 @@ public class SchedulerElevators implements Runnable{
 			DatagramSocket sendDoorClose = new DatagramSocket();
 			DatagramPacket doorClosePkt = new DatagramPacket(doorCloseMsg, doorCloseMsg.length, addr,elevPortNumber);
 			sendDoorClose.send(doorClosePkt);
+			startDoorTime = System.nanoTime();
 			this.useDoorTime = true;
 			timer = new Thread(this, "timerThread");
 			sendDoorClose.close();

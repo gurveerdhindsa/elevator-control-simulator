@@ -17,6 +17,7 @@ import java.sql.Timestamp;
  */
 
 public class Floor implements Runnable {
+	public static long startTime;
 	private Thread sendThread, sendReceiveThread;
 	private DatagramSocket sendReceiveSocket; 	// Socket to send and receive packets
 	private List<FloorRequest> floorRequests;	// List of requests to be made
@@ -114,7 +115,9 @@ public class Floor implements Runnable {
 				packet = new DatagramPacket(request, request.length, InetAddress.getByName("134.117.59.101"), 45);
 				System.out.println(new SimpleDateFormat("hh:mm:ss.SSS").format(floorRequest.timestamp) + ": Passenger request to go " + floorRequest.floorButton.toLowerCase() + " from floor " + floorRequest.floor + " to " + floorRequest.carButton);
 				System.out.println("FloorTime: " + floorRequest.floorTime + " doorTime " + floorRequest.doorTime);
+				startTime = System.nanoTime();
 				sendReceiveSocket.send(packet);
+				
 				try {
 					Thread.sleep(1700);
 				} catch (InterruptedException e) {
