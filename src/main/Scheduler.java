@@ -119,6 +119,7 @@ public class Scheduler implements Runnable{
 			try {
 				this.receiveFloorSocket.receive(packet);
 				requestTime = System.nanoTime() - Floor.startTime;
+				System.out.println("**************Time taken for request from floor to scheduler = " + requestTime);
 				//System.out.println("got floor request with length " + packet.getLength());
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -232,10 +233,8 @@ public class Scheduler implements Runnable{
 			ip = InetAddress.getByName("134.117.59.103");
 			Scheduler s = new Scheduler(4,46,ip);
 		    s.start();
-		    System.out.println("Time taken for request from floor to scheduler = " + requestTime);
-		    System.out.println("Time taken for response of door close message from scheduler to elevator = " + SchedulerElevators.totalDoorTime);
-		    System.out.println("Time taken for response of Request  from scheduler to elevator = " + SchedulerElevators.totalRequestTime);
-		    System.out.println("Time taken for response of Floor to floor message from elevator to scheduler = " + SchedulerElevators.totalFloorToFloorTime);
+		  
+		   
 
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block

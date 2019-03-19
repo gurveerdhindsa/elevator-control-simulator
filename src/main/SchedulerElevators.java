@@ -30,12 +30,12 @@ public class SchedulerElevators implements Runnable{
 	
 	private boolean useDoorTime;
     private Thread timer;
-    public static long startDoorTime;
-    public static long totalDoorTime;
-    public static long startRequestTime;
-    public static long totalRequestTime;
-    public static long startMoveTime;
-    public static long totalFloorToFloorTime;
+    public  long startDoorTime;
+    private  long totalDoorTime;
+    private  long startRequestTime;
+    private  long totalRequestTime;
+    private  long startMoveTime;
+    private  long totalFloorToFloorTime;
 	
 	/**
 	 * Creates a runnable instance with a single thread
@@ -314,6 +314,7 @@ public class SchedulerElevators implements Runnable{
 				if(this.currentRequest != null)
 				{	
 					totalDoorTime = System.nanoTime() - startDoorTime;
+				    System.out.println("*************Time taken for response of door close message from scheduler to elevator = " + totalDoorTime);
 					//interrupt timer
 					timer.interrupt();
 					sendRequest();
@@ -339,6 +340,8 @@ public class SchedulerElevators implements Runnable{
 			
 			case 5: // ready
 				totalRequestTime = System.nanoTime() - startRequestTime;
+			    System.out.println("**********Time taken for response of Request  from scheduler to elevator = " + totalRequestTime);
+
 				this.direction = msg[3];
 				this.destinationFloor = msg[2];
 				sendMove();
@@ -346,6 +349,7 @@ public class SchedulerElevators implements Runnable{
 			
 			case 7: //arrival sensor
 				totalFloorToFloorTime = System.nanoTime() - startMoveTime;
+				 System.out.println("Time taken for response of Floor to floor message from elevator to scheduler = " + totalFloorToFloorTime);
 				//not special case & direction up
 				this.timer.interrupt();
 				this.updateCurrentFloor();
