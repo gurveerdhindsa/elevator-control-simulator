@@ -55,7 +55,7 @@ public class SchedulerElevators implements Runnable{
 	 *                 client Elevator instance is headed to
 	 */
 	public SchedulerElevators(List<FloorRequest>up, List<FloorRequest>down, 
-			int elevPort, int assignedPort, int initList, InetAddress addr)
+			int elevPort, int assignedPort, int initList, InetAddress addr,int topFloor)
 	{
 		this.up = up;
 		this.down = down;
@@ -63,7 +63,7 @@ public class SchedulerElevators implements Runnable{
 		this.assignedPort = assignedPort;
 		this.initialList = initList;
 		this.direction = this.initialList == 1 ? 1 : -1;
-		this.topFloor = 19; // remove hard-coded value
+		this.topFloor = topFloor;
 		this.addr = addr;
 		try {
 			this.receiveElevatorSocket = new DatagramSocket(assignedPort);

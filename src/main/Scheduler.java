@@ -23,6 +23,7 @@ public class Scheduler implements Runnable{
 	private int initialRequestList;
 	private InetAddress communicator;
 	private static long requestTime;
+	private int topFloor;
 	
 	/**
 	 * Constructor for the Scheduler
@@ -30,7 +31,8 @@ public class Scheduler implements Runnable{
 	 * messages/commands to and from floor, and the other 
 	 * to listen/send messages to and from elevator
 	 */
-	public Scheduler(int numberOfElevators, int basePortNumber, InetAddress address)
+	public Scheduler(int numberOfElevators, int basePortNumber, InetAddress address,
+			int topFloor)
 	{
 		this.floorMsgThread = new Thread(this,"floorThread");
 		this.elevatorMsgThread = new Thread(this, "elevatorThread"); 
@@ -40,13 +42,14 @@ public class Scheduler implements Runnable{
 		this.portNumbers = new ArrayList<>();
 		this.initialRequestList = 1;
 		this.communicator = address;
+		this.topFloor = topFloor - 1;
 		
 		for(int i = 0; i < numberOfElevators; i++)
 		{
 			this.portNumbers.add(basePortNumber + i);
 		}
 		
-		for (int i = 0; i < 20; i++) {
+		for (int i = 0; i < topFloor; i++) {
 		    upRequests.add(i, new FloorRequest());
 		    downRequests.add(i, new FloorRequest());
 		}
@@ -89,7 +92,7 @@ public class Scheduler implements Runnable{
 			case 0:
 				SchedulerElevators elevator = new SchedulerElevators(this.upRequests,
 						this.downRequests, elevatorMsg[4],this.portNumbers.remove(0),this.initialRequestList,
-						this.communicator);
+						this.communicator, this.topFloor);
 				this.initialRequestList = (this.initialRequestList + 1)%2;
 				this.elevators.add(elevator);
 				Thread elevThread = new Thread(elevator, "SchedulerElevator: " + this.elevators.size());
@@ -230,12 +233,9 @@ public class Scheduler implements Runnable{
 
 		InetAddress ip;
 		try {
-			ip = InetAddress.getByName("134.117.59.103");
-			Scheduler s = new Scheduler(4,46,ip);
+			ip = InetAddress.getByName(args[0]);
+			Scheduler s = new Scheduler(Integer.parseInt(args[2]),46,ip,Integer.parseInt(args[1]));
 		    s.start();
-		  
-		   
-
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

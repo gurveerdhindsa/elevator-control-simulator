@@ -573,20 +573,16 @@ public class Elevator implements Runnable{
 	 */
 	public static void main(String[] args)
 	{
+		int basePort = 70;
 		InetAddress addr;
 		try {
-			addr = InetAddress.getByName("134.117.59.101");
-			Elevator e = new Elevator(70,addr);
-			e.start();
-			
-			Elevator e1 = new Elevator(71,addr);
-			e1.start();
-			
-			Elevator e2 = new Elevator(72,addr);
-			e2.start();
-			
-			Elevator e3 = new Elevator(73,addr);
-			e3.start();
+			addr = InetAddress.getByName(args[0]);
+			for(int i = 0; i < Integer.parseInt(args[1]); i++)
+			{
+				Elevator elev = new Elevator(basePort,addr);
+				basePort++;
+				elev.start();
+			}
 		} catch (UnknownHostException e4) {
 			// TODO Auto-generated catch block
 			e4.printStackTrace();
