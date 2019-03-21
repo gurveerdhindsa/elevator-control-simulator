@@ -230,7 +230,9 @@ public class Scheduler implements Runnable{
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
+		//index 0 ip address elevator
+		//index 1 number of floors 20
+		//index 2 # of elevator
 		InetAddress ip;
 		try {
 			ip = InetAddress.getByName(args[0]);
