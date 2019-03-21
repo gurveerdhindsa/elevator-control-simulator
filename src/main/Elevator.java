@@ -575,6 +575,8 @@ public class Elevator implements Runnable{
 	{
 		int basePort = 70;
 		InetAddress addr;
+		//index 0 ip address scheduler 
+		// index 1 # of elevator 
 		try {
 			addr = InetAddress.getByName(args[0]);
 			for(int i = 0; i < Integer.parseInt(args[1]); i++)
