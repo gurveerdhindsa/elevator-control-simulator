@@ -21,14 +21,16 @@ public class Floor implements Runnable {
 	private Thread sendThread, sendReceiveThread;
 	private DatagramSocket sendReceiveSocket; 	// Socket to send and receive packets
 	private List<FloorRequest> floorRequests;	// List of requests to be made
+	private InetAddress schedulerIp;
 
 	/**
 	 * Creates 2 threads, one to receive and one to send packets to/from scheduler
 	 * 
 	 */
-	public Floor() {
+	public Floor(InetAddress addr) {
 		sendThread = new Thread(this, "sendThread");
 		sendReceiveThread = new Thread(this, "sendReceiveThread");
+		this.schedulerIp = addr;
 		
 		floorRequests = new ArrayList<FloorRequest>();
 
@@ -112,7 +114,7 @@ public class Floor implements Runnable {
 				buffer.write(floorRequest.getBytes());
 				byte[] request = buffer.toByteArray();
 				// Create datagram packet to send
-				packet = new DatagramPacket(request, request.length, InetAddress.getByName("134.117.59.101"), 45);
+				packet = new DatagramPacket(request, request.length, this.schedulerIp, 45);
 				System.out.println(new SimpleDateFormat("hh:mm:ss.SSS").format(floorRequest.timestamp) + ": Passenger request to go " + floorRequest.floorButton.toLowerCase() + " from floor " + floorRequest.floor + " to " + floorRequest.carButton);
 				System.out.println("FloorTime: " + floorRequest.floorTime + " doorTime " + floorRequest.doorTime);
 				startTime = System.nanoTime();
@@ -151,6 +153,12 @@ public class Floor implements Runnable {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new Floor();
+		try {
+			// args [0] ip address of scheduler
+			new Floor(InetAddress.getByName(args[0]));
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
