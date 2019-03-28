@@ -1,4 +1,5 @@
 package main;
+import gui.view;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,6 +37,7 @@ public class SchedulerElevators implements Runnable{
     private  long totalRequestTime;
     private  long startMoveTime;
     private  long totalFloorToFloorTime;
+    public view v;
 	
 	/**
 	 * Creates a runnable instance with a single thread
@@ -72,6 +74,7 @@ public class SchedulerElevators implements Runnable{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		v = new view("Elevator " + Integer.toString(assignedPort-45));
 	}
 
 	/**
@@ -577,6 +580,7 @@ public class SchedulerElevators implements Runnable{
 		
 		System.out.println("Scheduler-> Elevator with port:" + this.elevPortNumber
 				+ " now approaching floor:" + this.currentFloor);
+		v.eleField1.setText(Integer.toString(this.currentFloor));
 	}
 	
 	/**

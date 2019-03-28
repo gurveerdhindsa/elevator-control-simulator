@@ -1,4 +1,5 @@
 package gui;
+import main.SchedulerElevators;
 import java.awt.GridLayout;
 import javax.swing.*;
 
@@ -10,14 +11,14 @@ public class view extends JFrame{
 	private JLabel eleLabel3;
 	private JLabel eleLabel4;
 	
-	private JTextField eleField1;
-	private JTextField eleField2;
-	private JTextField eleField3;
-	private JTextField eleField4;
+	public JTextField eleField1;
+	public JTextField eleField2;
+	public JTextField eleField3;
+	public JTextField eleField4;
 	
 	
-	public view () {
-		frame = new JFrame("Elevator-Controller");
+	public view (String name) {
+		frame = new JFrame(name);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(600, 600);
 		frame.setLayout(new GridLayout(5,2));
@@ -29,12 +30,13 @@ public class view extends JFrame{
 	
 	
 	private void addComponents() {
-		eleLabel1 = new JLabel("Elevator 1");
+		
+		eleLabel1 = new JLabel("Current Floor");
 		this.frame.add(eleLabel1);
 		eleField1 = new JTextField();
 		this.frame.add(eleField1);
 		
-		eleLabel2 = new JLabel("Elevator 2");
+		/*eleLabel2 = new JLabel("Elevator 2");
 		this.frame.add(eleLabel2);
 		eleField2 = new JTextField();
 		this.frame.add(eleField2);
@@ -48,12 +50,13 @@ public class view extends JFrame{
 		this.frame.add(eleLabel4);
 		eleField4 = new JTextField();
 		this.frame.add(eleField4);
+		*/
 		
 		// make all false
 		eleField1.setVisible(true); 
-		eleField2.setVisible(true);
-		eleField3.setVisible(true);
-		eleField4.setVisible(true);
+		//eleField2.setVisible(true);
+		//eleField3.setVisible(true);
+		//eleField4.setVisible(true);
 		
 		
 	}
@@ -61,7 +64,7 @@ public class view extends JFrame{
 
 
 	public static void main (String[] args) {
-		view guiView =new view();
+		//view guiView =new view();
 	}
 
 }
