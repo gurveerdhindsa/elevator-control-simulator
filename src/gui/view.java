@@ -5,11 +5,11 @@ import javax.swing.*;
 
 public class view extends JFrame{
 	
-	private JFrame frame;
+	public JFrame frame;
 	private JLabel eleLabel1;
-	private JLabel eleLabel2;
-	private JLabel eleLabel3;
-	private JLabel eleLabel4;
+	//private JLabel eleLabel2;
+	//private JLabel eleLabel3;
+	//private JLabel eleLabel4;
 	
 	public JTextField eleField1;
 	public JTextField eleField2;

@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import javax.swing.JOptionPane;
+
 public class SchedulerElevators implements Runnable{
 	
 	private int currentFloor;
@@ -391,6 +393,7 @@ public class SchedulerElevators implements Runnable{
 				//set discard next receive doorclosed
 				//sendDoorclose
 				System.out.println("Resending door close");
+				JOptionPane.showMessageDialog(v.frame, "Door Close Error in Elevator " + Integer.toString(assignedPort-45) + ". Resending Door Close Message.");
 				//this.discardNextReceived = true;
 				if(this.currentRequest != null)
 				{
@@ -405,6 +408,7 @@ public class SchedulerElevators implements Runnable{
 			
 			case 13: //send shutdown to elevator
 				System.out.println("Shutting down elevator with port " + this.elevPortNumber);
+				JOptionPane.showMessageDialog(v.frame, "Shutting Down Elevator " + Integer.toString(assignedPort-45));
 				byte [] crash = new byte [] {14};
 				breakOut = true;
 				try {
