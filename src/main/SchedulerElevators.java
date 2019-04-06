@@ -577,9 +577,11 @@ public class SchedulerElevators implements Runnable{
 	{
 		if (direction == 1) {
 		     currentFloor++;
+		     v.dirField.setText("Up");
 		}
 		else {
 		   currentFloor--;
+		   v.dirField.setText("Down");
 		}
 		
 		System.out.println("Scheduler-> Elevator with port:" + this.elevPortNumber
